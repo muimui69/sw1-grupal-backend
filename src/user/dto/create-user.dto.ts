@@ -2,7 +2,7 @@ import { IsEmail, IsOptional, IsString, MinLength } from "class-validator";
 import { HasMimeType, IsFile, MaxFileSize, MemoryStoredFile } from "nestjs-form-data";
 
 
-export class CreateUserDto{
+export class CreateUserDto {
 
   @IsEmail()
   @IsString()
@@ -22,5 +22,5 @@ export class CreateUserDto{
   @IsFile()
   @MaxFileSize(1e6)
   @HasMimeType(['image/*'])
-  photo?:         MemoryStoredFile;
+  photo?: MemoryStoredFile;
 }

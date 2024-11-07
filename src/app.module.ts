@@ -9,23 +9,25 @@ import { TenantModule } from './tenant/tenant.module';
 import { CommonModule } from './common/common.module';
 import { CandidateModule } from './candidate/candidate.module';
 import { MatchModule } from './match/match.module';
+import { PartyModule } from './party/party.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      load:[envConfig],
+      load: [envConfig],
       isGlobal: true,
       validationSchema: envSchema
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory:(config: ConfigService )=> ({
-        uri: config.get<string>('database_url')  
+      useFactory: (config: ConfigService) => ({
+        uri: config.get<string>('database_url')
       }),
-      inject:[ConfigService]
+      inject: [ConfigService]
     }),
     NestjsFormDataModule.configAsync({
-      useFactory: ()=>({
+      useFactory: () => ({
         storage: FileSystemStoredFile,
         fileSystemStoragePath: '/tmp',
       }),
@@ -36,9 +38,11 @@ import { MatchModule } from './match/match.module';
     TenantModule,
     CommonModule,
     CandidateModule,
-    MatchModule
+    MatchModule,
+    PartyModule,
+    CloudinaryModule
   ],
-  
-  providers: [],  
+
+  providers: [],
 })
-export class AppModule {}
+export class AppModule { }

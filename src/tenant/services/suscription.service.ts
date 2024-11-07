@@ -13,20 +13,20 @@ import { InjectConnection } from '@nestjs/mongoose';
 
 @Injectable()
 export class SuscriptionService {
-  private readonly stripe:Stripe;
+  private readonly stripe: Stripe;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly tenantService: TenantService,
     private readonly userService: UserService,
     @InjectConnection() private readonly connection: Connection,
-  ){
+  ) {
     this.stripe = new Stripe(this.configService.get<string>("stripe_key_api"))
   }
 
-  public async createSuscription(createTenantDto: CreateTenantDto, userId: string):Promise<Stripe.Response<Stripe.Checkout.Session>>{
+  public async createSuscription(createTenantDto: CreateTenantDto, userId: string): Promise<Stripe.Response<Stripe.Checkout.Session>> {
     try {
-      if(createTenantDto.plan === "Gold" && (!createTenantDto.number_voting ||  createTenantDto.number_voting <= 500))
+      if (createTenantDto.plan === "Gold" && (!createTenantDto.number_voting || createTenantDto.number_voting <= 500))
         throw new BadRequestException("El plan gold necesita un numero de votantes arriba de 500 personas")
 
       const findTenants = await this.tenantService.findOrTenant([
@@ -37,25 +37,25 @@ export class SuscriptionService {
           name: createTenantDto.name
         }
       ]);
-      if(findTenants.length)
+      if (findTenants.length)
         throw new BadRequestException("Ingrese otro nombre o subdominio, ya se encuentra en uso");
 
       const metadata = {
-        userId: String(userId), 
+        userId: String(userId),
         plan: createTenantDto.plan,
         domain: createTenantDto.domain,
         name: createTenantDto.name,
-        number_voting: createTenantDto.number_voting?.toString()?? "500"
+        number_voting: createTenantDto.number_voting?.toString() ?? "500"
       }
       const paymentStripe = await this.payment([
         {
           price_data: {
-            product_data:{
+            product_data: {
               name: createTenantDto.plan,
-              description: `Plan ${createTenantDto.plan} de suscripcion del servicio de votacion con blockchain.` 
+              description: `Plan ${createTenantDto.plan} de suscripcion del servicio de votacion con blockchain.`
             },
             currency: 'usd',
-            unit_amount: (createTenantDto.plan === "Gold" ? 100 * 100: 0)
+            unit_amount: (createTenantDto.plan === "Gold" ? 100 * 100 : 0)
           },
           quantity: 1
         }
@@ -63,7 +63,7 @@ export class SuscriptionService {
 
       return paymentStripe;
     } catch (err) {
-      if(err instanceof BadRequestException)
+      if (err instanceof BadRequestException)
         throw err;
       console.log(err)
       throw new InternalServerErrorException(`Server error ${err}`);
@@ -71,23 +71,24 @@ export class SuscriptionService {
   }
 
 
-  private async payment (line_items: Stripe.Checkout.SessionCreateParams.LineItem[], metadata: Stripe.Metadata): Promise<Stripe.Response<Stripe.Checkout.Session>> {
+  private async payment(line_items: Stripe.Checkout.SessionCreateParams.LineItem[], metadata: Stripe.Metadata): Promise<Stripe.Response<Stripe.Checkout.Session>> {
     const pago = await this.stripe.checkout.sessions.create({
-        line_items: line_items,
-        mode: 'payment',
-        success_url:  this.configService.get<string>("stripe_sucess_url"),
-        cancel_url:   this.configService.get<string>("stripe_cancel_url"),
-        metadata,
+      line_items: line_items,
+      mode: 'payment',
+      success_url: this.configService.get<string>("stripe_sucess_url"),
+      cancel_url: this.configService.get<string>("stripe_cancel_url"),
+      metadata,
     })
     return pago
   }
 
-  public async webhookPayment(body: Stripe.Metadata): Promise<Tenant>{
+  public async webhookPayment(body: Stripe.Metadata): Promise<Tenant> {
     const session = await this.connection.startSession();
     session.startTransaction();
     try {
+
       const data = {
-        userId: body.userId, 
+        userId: body.userId,
         plan: body.plan as Plan,
         domain: body.domain,
         name: body.name,
@@ -102,11 +103,11 @@ export class SuscriptionService {
           domain: data.domain
         }
       ]);
-      if(findTenant.length)
+      if (findTenant.length)
         throw new BadRequestException("Tenant ya en uso");
 
       const findUser = this.userService.findIdUser(data.userId);
-      if(!findUser)
+      if (!findUser)
         throw new NotFoundException("Usuario no encontrado");
 
       const createTenant = await this.tenantService.createTenant({
@@ -127,10 +128,10 @@ export class SuscriptionService {
       await session.abortTransaction();
       session.endSession();
       console.log(err);
-      if(err instanceof BadRequestException)
+      if (err instanceof BadRequestException)
         throw err
 
-      if(err instanceof NotFoundException)
+      if (err instanceof NotFoundException)
         throw err;
 
       throw new InternalServerErrorException(`server error ${err}`)

@@ -9,17 +9,17 @@ import { TokenAuthGuard } from 'src/auth/guard';
 export class SuscriptionController {
 
   constructor(
-    private readonly suscriptionService:SuscriptionService
-  ){}
+    private readonly suscriptionService: SuscriptionService
+  ) { }
 
 
   @Post("create")
   @UseGuards(TokenAuthGuard)
   @HttpCode(HttpStatus.CREATED)
-  public async createSuscription(@Body() createTenantDto:CreateTenantDto, @Req() req:Request){
+  public async createSuscription(@Body() createTenantDto: CreateTenantDto, @Req() req: Request) {
     const statusCode = HttpStatus.CREATED;
     const userId = req.userId;
-    const suscription = await this.suscriptionService.createSuscription(createTenantDto,userId);
+    const suscription = await this.suscriptionService.createSuscription(createTenantDto, userId);
     return {
       statusCode,
       message: "suscripcion casi acabado",
@@ -30,7 +30,7 @@ export class SuscriptionController {
   }
   @Post("webhook")
   @HttpCode(HttpStatus.CREATED)
-  public async suscriptionWebhook(@Body() body:Stripe.CheckoutSessionCompletedEvent){
+  public async suscriptionWebhook(@Body() body: Stripe.CheckoutSessionCompletedEvent) {
     const statusCode = HttpStatus.CREATED;
     const suscription = await this.suscriptionService.webhookPayment(body.data.object.metadata);
     return {
@@ -41,5 +41,5 @@ export class SuscriptionController {
       }
     }
   }
-  
+
 }

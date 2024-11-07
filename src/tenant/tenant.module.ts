@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
 
@@ -9,6 +9,7 @@ import { TenantService } from './services/tenant.service';
 import { SuscriptionController } from './controllers/suscription.controller';
 import { AuthModule } from 'src/auth/auth.module';
 import { UserModule } from 'src/user/user.module';
+import { Party, PartySchema } from 'src/party/entity';
 
 @Module({
   imports: [
@@ -28,10 +29,14 @@ import { UserModule } from 'src/user/user.module';
       {
         name: Configuration.name,
         schema: configurationSchema
-      }
+      },
+      {
+        name: Party.name,
+        schema: PartySchema,
+      },
     ]),
     UserModule,
-    AuthModule
+    forwardRef(() => AuthModule),
   ],
   exports: [
     TenantService
@@ -39,4 +44,4 @@ import { UserModule } from 'src/user/user.module';
   providers: [SuscriptionService, TenantService],
   controllers: [SuscriptionController]
 })
-export class TenantModule {}
+export class TenantModule { }
