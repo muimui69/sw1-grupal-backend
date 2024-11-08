@@ -16,12 +16,12 @@ export class PartyService {
 
   async findAllParties(query: IPartyOptions): Promise<Party[]> {
     try {
-      const { filter, skip = 0, limit = 10 } = query;
-      return await this.partyModel
-        .find(filter)
+      const { skip = 0, limit = 10 } = query;
+      const parties = await this.partyModel.find()
         .skip(skip)
         .limit(limit)
         .exec();
+      return parties;
     } catch (error) {
       throw new BadRequestException('Failed to retrieve parties.');
     }

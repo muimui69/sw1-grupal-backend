@@ -1,5 +1,5 @@
 import { BadRequestException, CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
-import { UserService } from 'src/user/service';
+import { UserService } from 'src/user/services';
 import { AuthService } from '../services';
 import { Request } from 'express';
 

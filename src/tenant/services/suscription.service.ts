@@ -6,7 +6,7 @@ import { Connection } from 'mongoose';
 
 import { CreateTenantDto } from '../dto';
 import { TenantService } from './tenant.service';
-import { UserService } from 'src/user/service';
+import { UserService } from 'src/user/services';
 import { Tenant } from '../entity';
 import { Plan } from 'src/constant';
 import { InjectConnection } from '@nestjs/mongoose';

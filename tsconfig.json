@@ -19,6 +19,7 @@
     "noFallthroughCasesInSwitch": false,
     "types": [
       "node"
-    ]
+    ],
+    "resolveJsonModule": true,
   }
 }

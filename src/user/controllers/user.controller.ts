@@ -1,16 +1,16 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { CreateUserDto } from '../dto';
-import { UserService } from '../service/user.service';
+import { UserService } from '../services/user.service';
 import { FormDataRequest } from 'nestjs-form-data';
 
 @Controller('user')
 export class UserController {
   constructor(
     private readonly userService: UserService
-  ) {}
+  ) { }
 
   @Get()
-  usefind(){
+  usefind() {
     return "hello word";
   }
 
@@ -23,7 +23,7 @@ export class UserController {
     return {
       statusCode,
       message: "Usuario creado",
-      data:{
+      data: {
         user: userCreate
       }
     }

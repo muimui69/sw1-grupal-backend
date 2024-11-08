@@ -11,6 +11,8 @@ import { CandidateModule } from './candidate/candidate.module';
 import { MatchModule } from './match/match.module';
 import { PartyModule } from './party/party.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { BallotModule } from './ballot/ballot.module';
+import { BlockchainModule } from './blockchain/blockchain.module';
 
 @Module({
   imports: [
@@ -40,7 +42,9 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     CandidateModule,
     MatchModule,
     PartyModule,
-    CloudinaryModule
+    CloudinaryModule,
+    BallotModule,
+    BlockchainModule
   ],
 
   providers: [],
