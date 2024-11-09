@@ -14,10 +14,13 @@ export class ElectionService {
   }
 
   setElectionContract(address: string) {
+    const privateKey = this.configService.get<string>('wallet_private_key');
+    const wallet = new ethers.Wallet(privateKey, this.provider);
+
     this.electionContract = new ethers.Contract(
       address,
       electionAbi.abi,
-      this.provider
+      wallet
     );
   }
 
@@ -31,7 +34,7 @@ export class ElectionService {
         name: candidateData.name,
         description: candidateData.description,
         imgHash: candidateData.imgHash,
-        voteCount: candidateData.voteCount,
+        voteCount: candidateData.voteCount.toString(),
         email: candidateData.email,
       });
     }
@@ -39,13 +42,14 @@ export class ElectionService {
     return candidates;
   }
 
+
   async getNumOfCandidates() {
     return await this.electionContract.getNumOfCandidates();
   }
 
   async addCandidate(name: string, description: string, imgHash: string, email: string) {
     const tx = await this.electionContract.addCandidate(name, description, imgHash, email);
-    await tx.wait(); // Espera la confirmación de la transacción
+    await tx.wait();
     return tx;
   }
 
@@ -77,3 +81,5 @@ export class ElectionService {
     return await this.electionContract.getElectionStatus();
   }
 }
+
+//0x65d6A2974466601bF9647b99e164bf95DaD1E016

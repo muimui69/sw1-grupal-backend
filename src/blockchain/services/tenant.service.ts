@@ -97,3 +97,5 @@ export class TenantService {
         return await this.tenantContract.electionExists(subdomain);
     }
 }
+
+// 0xC19f69707178aAA6e51b4388e141c1962ECFC8A9

@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { ElectionService } from '../services';
 
-@Controller('election')
+@Controller('blockchain/election')
 export class ElectionController {
     constructor(private readonly electionService: ElectionService) { }
 
@@ -15,14 +15,14 @@ export class ElectionController {
         return this.electionService.getNumOfCandidates();
     }
 
-    @Post('addCandidate')
+    @Post('create-candidate')
     async addCandidate(
         @Body('name') name: string,
         @Body('description') description: string,
         @Body('imgHash') imgHash: string,
         @Body('email') email: string,
     ) {
-        return this.electionService.addCandidate(name, description, imgHash, email);
+        return await this.electionService.addCandidate(name, description, imgHash, email);
     }
 
     @Post('vote')

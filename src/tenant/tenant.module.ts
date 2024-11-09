@@ -10,6 +10,7 @@ import { SuscriptionController } from './controllers/suscription.controller';
 import { AuthModule } from 'src/auth/auth.module';
 import { UserModule } from 'src/user/user.module';
 import { Party, PartySchema } from 'src/party/entity';
+import { TenantController } from './controllers/tenant.controller';
 
 @Module({
   imports: [
@@ -42,6 +43,6 @@ import { Party, PartySchema } from 'src/party/entity';
     TenantService
   ],
   providers: [SuscriptionService, TenantService],
-  controllers: [SuscriptionController]
+  controllers: [SuscriptionController, TenantController]
 })
 export class TenantModule { }

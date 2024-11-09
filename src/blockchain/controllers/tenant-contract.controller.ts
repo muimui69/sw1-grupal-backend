@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Delete, Param, Body } from '@nestjs/common';
 import { TenantService } from '../services';
 
-@Controller('tenant')
+@Controller('blockchain/tenant')
 export class TenantController {
   constructor(private readonly tenantService: TenantService) { }
 
