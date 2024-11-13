@@ -80,6 +80,9 @@ importers:
       uuid:
         specifier: ^10.0.0
         version: 10.0.0
+      zksync-ethers:
+        specifier: ^6.15.0
+        version: 6.15.0(ethers@6.13.4)
     devDependencies:
       '@nestjs/cli':
         specifier: ^10.4.4
@@ -3326,6 +3329,18 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
+  zksync-ethers@6.15.0:
+    resolution: {integrity: sha512-zafUxA/lysBO+9Wd6B3qNtDElsPwvAc2b4nBc/YiB4QY4H0pIBvV3/JqxHXXTppEo4gyHAX/+M5brW2qb4YnKA==}
+    engines: {node: '>=18.9.0'}
+    peerDependencies:
+      ethers: ^6.7.1
+
+  zksync-web3@0.17.1:
+    resolution: {integrity: sha512-jMV4gfAQyehkIbNs81i4uvccHLe+XBu/tNPFb0Rm38pXccWY5VXzVE6XWS0dBiHlMfjdfUGn/sxwzJbWZDGYGQ==}
+    deprecated: This package has been deprecated in favor of zksync-ethers@5.0.0
+    peerDependencies:
+      ethers: ~5.7.0
+
 snapshots:
 
   '@adraffy/ens-normalize@1.10.1': {}
@@ -6496,6 +6511,7 @@ snapshots:
       class-validator: 0.14.1
       cloudinary: 2.5.1
       eslint: 8.57.1
+      ethers: 6.13.4
       joi: 17.13.3
       jsonwebtoken: 9.0.2
       mongoose: 8.8.0
@@ -6505,11 +6521,14 @@ snapshots:
       rxjs: 7.8.1
       stripe: 16.12.0
       uuid: 10.0.0
+      zksync-ethers: 6.15.0(ethers@6.13.4)
+      zksync-web3: 0.17.1(ethers@6.13.4)
     transitivePeerDependencies:
       - '@aws-sdk/credential-providers'
       - '@mongodb-js/zstd'
       - '@nestjs/microservices'
       - '@nestjs/websockets'
+      - bufferutil
       - encoding
       - gcp-metadata
       - graphql
@@ -6518,6 +6537,7 @@ snapshots:
       - snappy
       - socks
       - supports-color
+      - utf-8-validate
 
   semver@6.3.1: {}
 
@@ -7020,3 +7040,11 @@ snapshots:
   yn@3.1.1: {}
 
   yocto-queue@0.1.0: {}
+
+  zksync-ethers@6.15.0(ethers@6.13.4):
+    dependencies:
+      ethers: 6.13.4
+
+  zksync-web3@0.17.1(ethers@6.13.4):
+    dependencies:
+      ethers: 6.13.4

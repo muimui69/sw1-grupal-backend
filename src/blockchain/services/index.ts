@@ -1,2 +1,2 @@
-export * from "./election.service"
-export * from "./tenant.service"
+export * from "./election-contract.service"
+export * from "./tenant-contract.service"

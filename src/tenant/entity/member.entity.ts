@@ -8,21 +8,27 @@ import { User } from "src/user/entity";
 @Schema({
   timestamps: true
 })
-export class MemberTenant extends Document{
+export class MemberTenant extends Document {
   @Prop({
     type: moongose.Schema.Types.ObjectId,
-    ref: 'Tenant'    
+    ref: 'Tenant'
   })
   tenant: Tenant
 
   @Prop({
     type: moongose.Schema.Types.ObjectId,
-    ref: 'User'    
+    ref: 'User'
   })
   user: User
 
   @Prop()
-  role:  string;
+  role: string;
+
+  @Prop({ type: String, required: true })
+  tenantAddress: string;
+
+  @Prop({ type: String, required: true })
+  electionAddress: string;
 }
 
 

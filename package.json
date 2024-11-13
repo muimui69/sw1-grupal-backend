@@ -43,7 +43,8 @@
     "rxjs": "^7.8.1",
     "secure-voting-backend": "file:",
     "stripe": "^16.11.0",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "zksync-ethers": "^6.15.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.4",

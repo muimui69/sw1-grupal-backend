@@ -38,7 +38,6 @@ export class PartyController {
     const partyList = await this.partyService.findAllParties({
       filter: { tenant_id: new Types.ObjectId(tenantId) }
     });
-    console.log(partyList)
     return {
       statusCode,
       message: "Lista de partidos",

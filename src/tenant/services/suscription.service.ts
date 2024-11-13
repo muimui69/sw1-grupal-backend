@@ -123,6 +123,8 @@ export class SuscriptionService {
       }, "owner");
       await session.commitTransaction();
       session.endSession();
+
+
       return createTenant;
     } catch (err) {
       await session.abortTransaction();
