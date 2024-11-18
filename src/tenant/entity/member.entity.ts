@@ -24,12 +24,12 @@ export class MemberTenant extends Document {
   @Prop()
   role: string;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: false })
   tenantAddress: string;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: false })
   electionAddress: string;
 }
 
 
-export const memberTenantSchema = SchemaFactory.createForClass(MemberTenant);
+export const MemberTenantSchema = SchemaFactory.createForClass(MemberTenant);

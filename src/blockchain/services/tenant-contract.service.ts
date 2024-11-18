@@ -20,64 +20,64 @@ export class TenantContractService {
         this.provider = new JsonRpcProvider(providerUrl);
         this.wallet = new Wallet(privateKey, this.provider);
     }
-    async deployTenant(userId: string, tenantId: string): Promise<MemberTenant> {
-        if (!Types.ObjectId.isValid(userId)) {
-            throw new BadRequestException("El ID de usuario proporcionado no es válido.");
-        }
+    // async deployTenant(userId: string, tenantId: string): Promise<MemberTenant> {
+    //     if (!Types.ObjectId.isValid(userId)) {
+    //         throw new BadRequestException("El ID de usuario proporcionado no es válido.");
+    //     }
 
-        if (!Types.ObjectId.isValid(tenantId)) {
-            throw new BadRequestException("El ID del tenant proporcionado no es válido.");
-        }
+    //     if (!Types.ObjectId.isValid(tenantId)) {
+    //         throw new BadRequestException("El ID del tenant proporcionado no es válido.");
+    //     }
 
-        const TenantFactory = new ContractFactory(tenantAbi.abi, tenantAbi.bytecode, this.wallet);
-        const deploymentFee = await this.wallet.estimateGas();
+    //     const TenantFactory = new ContractFactory(tenantAbi.abi, tenantAbi.bytecode, this.wallet);
+    //     const deploymentFee = await this.wallet.estimateGas();
 
-        const tenantContract = await TenantFactory.deploy();
-        await tenantContract.waitForDeployment();
+    //     const tenantContract = await TenantFactory.deploy();
+    //     await tenantContract.waitForDeployment();
 
-        const tenantAddressContract = await tenantContract.getAddress();
-        console.log(`Tenant deployed at: ${tenantAddressContract}`);
-
-
-        const memberTenant = await this.memberTenantModel.findOneAndUpdate(
-            { user: userId, tenant: tenantId, role: "owner" },
-            { tenantAddress: tenantAddressContract },
-            { new: true, upsert: true } // Crea un documento si no existe
-        );
-
-        if (!memberTenant) {
-            throw new Error('No se pudo actualizar el tenantAddress en MemberTenant');
-        }
-
-        return memberTenant;
-    }
+    //     const tenantAddressContract = await tenantContract.getAddress();
+    //     console.log(`Tenant deployed at: ${tenantAddressContract}`);
 
 
+    //     const memberTenant = await this.memberTenantModel.findOneAndUpdate(
+    //         { user: userId, tenant: tenantId, role: "owner" },
+    //         { tenantAddress: tenantAddressContract },
+    //         { new: true, upsert: true } // Crea un documento si no existe
+    //     );
 
-    // Método para crear una elección en el contrato Tenant
-    async createElection(memberTenantId: string, subdomain: string, electionAddress: string) {
-        const memberTenant = await this.memberTenantModel.findById(memberTenantId);
-        if (!memberTenant || !memberTenant.tenantAddress) throw new Error('Tenant address not set in MemberTenant');
+    //     if (!memberTenant) {
+    //         throw new Error('No se pudo actualizar el tenantAddress en MemberTenant');
+    //     }
 
-        const tenantContract = new ethers.Contract(memberTenant.tenantAddress, tenantAbi.abi, this.wallet);
-        const tx = await tenantContract.createElection(subdomain, electionAddress);
-        await tx.wait();
+    //     return memberTenant;
+    // }
 
-        return { success: true, subdomain, electionAddress };
-    }
 
-    // Método para obtener los detalles de una elección en el contrato Tenant
-    async getElectionDetails(memberTenantId: string, subdomain: string) {
-        const memberTenant = await this.memberTenantModel.findById(memberTenantId);
-        if (!memberTenant || !memberTenant.tenantAddress) throw new Error('Tenant address not set in MemberTenant');
 
-        const tenantContract = new ethers.Contract(memberTenant.tenantAddress, tenantAbi.abi, this.wallet);
-        const electionData = await tenantContract.getElection(subdomain);
+    // // Método para crear una elección en el contrato Tenant
+    // async createElection(memberTenantId: string, subdomain: string, electionAddress: string) {
+    //     const memberTenant = await this.memberTenantModel.findById(memberTenantId);
+    //     if (!memberTenant || !memberTenant.tenantAddress) throw new Error('Tenant address not set in MemberTenant');
 
-        return {
-            electionAddress: electionData[0],
-            electionName: electionData[1],
-            electionDescription: electionData[2],
-        };
-    }
+    //     const tenantContract = new ethers.Contract(memberTenant.tenantAddress, tenantAbi.abi, this.wallet);
+    //     const tx = await tenantContract.createElection(subdomain, electionAddress);
+    //     await tx.wait();
+
+    //     return { success: true, subdomain, electionAddress };
+    // }
+
+    // // Método para obtener los detalles de una elección en el contrato Tenant
+    // async getElectionDetails(memberTenantId: string, subdomain: string) {
+    //     const memberTenant = await this.memberTenantModel.findById(memberTenantId);
+    //     if (!memberTenant || !memberTenant.tenantAddress) throw new Error('Tenant address not set in MemberTenant');
+
+    //     const tenantContract = new ethers.Contract(memberTenant.tenantAddress, tenantAbi.abi, this.wallet);
+    //     const electionData = await tenantContract.getElection(subdomain);
+
+    //     return {
+    //         electionAddress: electionData[0],
+    //         electionName: electionData[1],
+    //         electionDescription: electionData[2],
+    //     };
+    // }
 }

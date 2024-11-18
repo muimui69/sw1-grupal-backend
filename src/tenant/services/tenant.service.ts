@@ -125,4 +125,26 @@ export class TenantService {
     return memberTenants.map(memberTenant => memberTenant.tenant);
   }
 
+  async findTenantById(tenantId: string): Promise<Tenant | null> {
+    try {
+      const tenant = await this.tenantModel.findById(tenantId).exec();
+      if (!tenant) {
+        return null;
+      }
+      return tenant;
+    } catch (error) {
+      throw new NotFoundException(`Error finding tenant with ID ${tenantId}`);
+    }
+  }
+
+  async isUserMemberOfTenant(userId: string, tenantId: string): Promise<boolean> {
+    const member = await this.memberModel.findOne({
+      user: new Types.ObjectId(userId),
+      tenant: new Types.ObjectId(tenantId),
+    }).exec();
+    return !!member;
+  }
+
+
+
 }

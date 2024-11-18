@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ElectionContractService, TenantContractService } from './services';
 import { ElectionContractController, TenantContractController } from './controllers';
 import { MongooseModule } from '@nestjs/mongoose';
-import { MemberTenant, memberTenantSchema } from 'src/tenant/entity';
+import { MemberTenant, MemberTenantSchema } from 'src/tenant/entity';
 
 @Module({
   imports: [
@@ -11,7 +11,7 @@ import { MemberTenant, memberTenantSchema } from 'src/tenant/entity';
     MongooseModule.forFeature([
       {
         name: MemberTenant.name,
-        schema: memberTenantSchema
+        schema: MemberTenantSchema
       },
     ]),
   ],

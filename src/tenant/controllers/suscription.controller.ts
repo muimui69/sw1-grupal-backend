@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
 import { CreateTenantDto } from '../dto';
 import { Request } from 'express';
 import Stripe from "stripe"
@@ -32,6 +32,15 @@ export class SuscriptionController {
   @HttpCode(HttpStatus.CREATED)
   public async suscriptionWebhook(@Body() body: Stripe.CheckoutSessionCompletedEvent) {
     const statusCode = HttpStatus.CREATED;
+
+    if (body.type !== 'checkout.session.completed') return;
+
+    const metadata = body.data.object.metadata;
+    if (!metadata) {
+      console.error("Metadata no encontrada en el evento `checkout.session.completed`");
+      throw new BadRequestException("La metadata es necesaria para procesar la suscripción");
+    }
+
     const suscription = await this.suscriptionService.webhookPayment(body.data.object.metadata);
     return {
       statusCode,

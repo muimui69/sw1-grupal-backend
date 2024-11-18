@@ -1,8 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-
-
-import { Configuration, configurationSchema, MemberTenant, memberTenantSchema, Tenant, tenantSchema } from './entity';
+import { Configuration, configurationSchema, MemberTenant, MemberTenantSchema, Tenant, tenantSchema } from './entity';
 import { User, userSchema } from 'src/user/entity';
 import { SuscriptionService } from './services';
 import { TenantService } from './services/tenant.service';
@@ -25,7 +23,7 @@ import { TenantController } from './controllers/tenant.controller';
       },
       {
         name: MemberTenant.name,
-        schema: memberTenantSchema
+        schema: MemberTenantSchema
       },
       {
         name: Configuration.name,

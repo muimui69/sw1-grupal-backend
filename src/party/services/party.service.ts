@@ -1,23 +1,33 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Param, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, FilterQuery } from 'mongoose';
+import { Model, FilterQuery, Types } from 'mongoose';
 import { Party } from '../entity';
 import { IPartyOptions } from '../interface';
 import { CreatePartyDto } from '../dto/create-party.dto';
 import { UpdatePartyDto } from '../dto/update-party.dto';
 import { CloudinaryService } from 'src/cloudinary/services';
+import { MemberTenant } from 'src/tenant/entity';
+import { TenantService } from 'src/tenant/services/tenant.service';
 
 @Injectable()
 export class PartyService {
   constructor(
     @InjectModel(Party.name) private readonly partyModel: Model<Party>,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly tenantService: TenantService
   ) { }
 
-  async findAllParties(query: IPartyOptions): Promise<Party[]> {
+  async findAllParties(tenantId: string, userId: string, query: IPartyOptions): Promise<Party[]> {
     try {
-      const { skip = 0, limit = 10 } = query;
-      const parties = await this.partyModel.find()
+      const { skip = 0, limit = 10, filter = {} } = query;
+
+      const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
+      if (!isMember) {
+        throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
+      }
+
+      const parties = await this.partyModel
+        .find(filter)
         .skip(skip)
         .limit(limit)
         .exec();
@@ -43,18 +53,23 @@ export class PartyService {
     }
   }
 
-  async createParty(tenant_id: string, createPartyDto: CreatePartyDto): Promise<Party> {
+  async createParty(tenantId: string, userId: string, createPartyDto: CreatePartyDto): Promise<Party> {
     try {
-      // Check for existing party with the same name for the tenant
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
+      const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
+      if (!isMember) {
+        throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
+      }
+
       const existingParties = await this.findOrParty([
-        { tenant: tenant_id, name: createPartyDto.name },
+        { tenant: tenantObjectId, name: createPartyDto.name },
       ]);
 
       if (existingParties.length) {
         throw new BadRequestException('A party with this name already exists for this tenant.');
       }
 
-      // Upload logo to Cloudinary if provided
       let logo = '';
       if (createPartyDto.logo) {
         const result = await this.cloudinaryService.uploadImage(createPartyDto.logo);
@@ -63,7 +78,7 @@ export class PartyService {
 
       const createdParty = new this.partyModel({
         ...createPartyDto,
-        tenant: tenant_id,
+        tenant: tenantObjectId,
         logo,
       });
 
@@ -76,11 +91,19 @@ export class PartyService {
     }
   }
 
-  async findOne(id: string, tenant_id: string): Promise<Party> {
+  async findOne(id: string, userId: string, tenantId: string): Promise<Party> {
     try {
-      const party = await this.partyModel.findOne({ _id: id, tenant: tenant_id }).exec();
+
+      const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
+      if (!isMember) {
+        throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
+      }
+
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
+      const party = await this.partyModel.findOne({ _id: id, tenant: tenantObjectId }).exec();
       if (!party) {
-        throw new NotFoundException(`Party with ID ${id} not found for tenant ${tenant_id}`);
+        throw new NotFoundException(`Party with ID ${id} not found for tenant ${tenantId}`);
       }
       return party;
     } catch (error) {
@@ -88,12 +111,19 @@ export class PartyService {
     }
   }
 
-  async update(id: string, tenant_id: string, updatePartyDto: UpdatePartyDto): Promise<Party> {
+  async update(id: string, userId: string, tenantId: string, updatePartyDto: UpdatePartyDto): Promise<Party> {
     try {
-      // Ensure the party name is unique for the tenant if name is updated
+
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
+      const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
+      if (!isMember) {
+        throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
+      }
+
       if (updatePartyDto.name) {
         const existingParty = await this.partyModel.findOne({
-          tenant: tenant_id,
+          tenant: tenantObjectId,
           name: updatePartyDto.name,
           _id: { $ne: id },
         });
@@ -102,7 +132,6 @@ export class PartyService {
         }
       }
 
-      // Upload new logo to Cloudinary if provided
       let logo = '';
       if (updatePartyDto.logo) {
         const result = await this.cloudinaryService.uploadImage(updatePartyDto.logo);
@@ -110,7 +139,7 @@ export class PartyService {
       }
 
       const updatedParty = await this.partyModel.findOneAndUpdate(
-        { _id: id, tenant: tenant_id },
+        { _id: id, tenant: tenantObjectId },
         {
           ...updatePartyDto,
           ...(logo && { logo }), // Only update logo if a new file is provided
@@ -119,7 +148,7 @@ export class PartyService {
       ).exec();
 
       if (!updatedParty) {
-        throw new NotFoundException(`Party with ID ${id} not found for tenant ${tenant_id}`);
+        throw new NotFoundException(`Party with ID ${id} not found for tenant ${tenantId}`);
       }
       return updatedParty;
     } catch (error) {
@@ -127,11 +156,18 @@ export class PartyService {
     }
   }
 
-  async remove(id: string, tenant_id: string): Promise<Party> {
+  async remove(id: string, userId: string, tenantId: string): Promise<Party> {
     try {
-      const deletedParty = await this.partyModel.findOneAndDelete({ _id: id, tenant: tenant_id }).exec();
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
+      const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
+      if (!isMember) {
+        throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
+      }
+
+      const deletedParty = await this.partyModel.findOneAndDelete({ _id: id, tenant: tenantObjectId }).exec();
       if (!deletedParty) {
-        throw new NotFoundException(`Party with ID ${id} not found for tenant ${tenant_id}`);
+        throw new NotFoundException(`Party with ID ${id} not found for tenant ${tenantId}`);
       }
       return deletedParty;
     } catch (error) {

@@ -16,8 +16,9 @@ export class TokenAuthGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request>();
     const token = req.headers["auth-token"];
 
-    if (!token || Array.isArray(token))
-      throw new BadRequestException("El subdominio no es un dominio")
+    if (!token || Array.isArray(token)) {
+      throw new BadRequestException("El token de autenticación es inválido o no se proporcionó.");
+    }
 
     const manageToken = this.authService.decodeJwt(token);
     if (typeof manageToken === "string")
