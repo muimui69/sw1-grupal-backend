@@ -9,6 +9,8 @@ import { AuthModule } from 'src/auth/auth.module';
 import { UserModule } from 'src/user/user.module';
 import { Party, PartySchema } from 'src/party/entity';
 import { TenantController } from './controllers/tenant.controller';
+import { ElectionContractService, TenantContractService } from 'src/blockchain/services';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
@@ -35,12 +37,13 @@ import { TenantController } from './controllers/tenant.controller';
       },
     ]),
     UserModule,
+    HttpModule,
     forwardRef(() => AuthModule),
   ],
   exports: [
     TenantService
   ],
-  providers: [SuscriptionService, TenantService],
+  providers: [SuscriptionService, TenantService, ElectionContractService, TenantContractService],
   controllers: [SuscriptionController, TenantController]
 })
 export class TenantModule { }

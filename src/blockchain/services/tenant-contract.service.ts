@@ -1,83 +1,118 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { ContractFactory, JsonRpcProvider, Provider, Wallet, ethers } from 'ethers';
-import tenantAbi from '../abis/contracts/Tenant.json';
+import { isValidObjectId, Model, Types } from 'mongoose';
+import { ethers } from 'ethers';
+import { firstValueFrom } from 'rxjs';
+import { HttpService } from '@nestjs/axios';
 import { MemberTenant } from 'src/tenant/entity';
+import tenantAbi from '../abis/contracts/Tenant.json';
 
 @Injectable()
 export class TenantContractService {
-    private provider: Provider;
-    private wallet: Wallet;
+    private readonly hardhatMicroserviceUrl: string;
+    private provider: ethers.JsonRpcProvider;
+    private wallet: ethers.Wallet;
 
     constructor(
         private configService: ConfigService,
+        private httpService: HttpService,
         @InjectModel(MemberTenant.name) private memberTenantModel: Model<MemberTenant>
     ) {
+        this.hardhatMicroserviceUrl = this.configService.get<string>('hardhat_microservice_url');
         const providerUrl = this.configService.get<string>('blockchain_url');
         const privateKey = this.configService.get<string>('wallet_private_key');
-        this.provider = new JsonRpcProvider(providerUrl);
-        this.wallet = new Wallet(privateKey, this.provider);
+        this.provider = new ethers.JsonRpcProvider(providerUrl);
+        this.wallet = new ethers.Wallet(privateKey, this.provider);
     }
-    // async deployTenant(userId: string, tenantId: string): Promise<MemberTenant> {
-    //     if (!Types.ObjectId.isValid(userId)) {
-    //         throw new BadRequestException("El ID de usuario proporcionado no es válido.");
-    //     }
 
-    //     if (!Types.ObjectId.isValid(tenantId)) {
-    //         throw new BadRequestException("El ID del tenant proporcionado no es válido.");
-    //     }
+    async deployTenantContract(userId: string, tenantId: string): Promise<MemberTenant> {
 
-    //     const TenantFactory = new ContractFactory(tenantAbi.abi, tenantAbi.bytecode, this.wallet);
-    //     const deploymentFee = await this.wallet.estimateGas();
+        if (!isValidObjectId(userId)) {
+            throw new BadRequestException("El ID de usuario proporcionado no es válido.");
+        }
+        if (!isValidObjectId(tenantId)) {
+            throw new BadRequestException("El ID del tenant proporcionado no es válido.");
+        }
 
-    //     const tenantContract = await TenantFactory.deploy();
-    //     await tenantContract.waitForDeployment();
+        try {
+            const response = await firstValueFrom(
+                this.httpService.post(`${this.hardhatMicroserviceUrl}/deploy-tenant-contract`)
+            );
 
-    //     const tenantAddressContract = await tenantContract.getAddress();
-    //     console.log(`Tenant deployed at: ${tenantAddressContract}`);
+            const { contractTenant } = response.data;
+            console.log(contractTenant)
 
+            if (!contractTenant) {
+                throw new Error('No se pudo obtener la dirección del contrato de Tenant');
+            }
 
-    //     const memberTenant = await this.memberTenantModel.findOneAndUpdate(
-    //         { user: userId, tenant: tenantId, role: "owner" },
-    //         { tenantAddress: tenantAddressContract },
-    //         { new: true, upsert: true } // Crea un documento si no existe
-    //     );
+            const userObjectId = new Types.ObjectId(userId);
+            const tenantObjectId = new Types.ObjectId(tenantId);
 
-    //     if (!memberTenant) {
-    //         throw new Error('No se pudo actualizar el tenantAddress en MemberTenant');
-    //     }
-
-    //     return memberTenant;
-    // }
-
+            const existingMemberTenant = await this.memberTenantModel.findOne({
+                user: userObjectId,
+                tenant: tenantObjectId,
+                role: 'owner'
+            });
 
 
-    // // Método para crear una elección en el contrato Tenant
-    // async createElection(memberTenantId: string, subdomain: string, electionAddress: string) {
-    //     const memberTenant = await this.memberTenantModel.findById(memberTenantId);
-    //     if (!memberTenant || !memberTenant.tenantAddress) throw new Error('Tenant address not set in MemberTenant');
+            if (!existingMemberTenant) {
+                throw new Error('No se encontró un documento MemberTenant con los criterios proporcionados');
+            }
 
-    //     const tenantContract = new ethers.Contract(memberTenant.tenantAddress, tenantAbi.abi, this.wallet);
-    //     const tx = await tenantContract.createElection(subdomain, electionAddress);
-    //     await tx.wait();
+            const memberTenant = await this.memberTenantModel.findOneAndUpdate(
+                { user: userObjectId, tenant: tenantObjectId, role: 'owner' },
+                { $set: { tenantAddress: contractTenant } },
+                { new: true, upsert: false }
+            );
 
-    //     return { success: true, subdomain, electionAddress };
-    // }
+            if (!memberTenant) {
+                throw new Error('No se pudo actualizar el tenantAddress en MemberTenant');
+            }
 
-    // // Método para obtener los detalles de una elección en el contrato Tenant
-    // async getElectionDetails(memberTenantId: string, subdomain: string) {
-    //     const memberTenant = await this.memberTenantModel.findById(memberTenantId);
-    //     if (!memberTenant || !memberTenant.tenantAddress) throw new Error('Tenant address not set in MemberTenant');
+            return memberTenant;
+        } catch (error) {
+            throw new BadRequestException(`Error al desplegar el contrato de Tenant: ${error.message}`);
+        }
+    }
 
-    //     const tenantContract = new ethers.Contract(memberTenant.tenantAddress, tenantAbi.abi, this.wallet);
-    //     const electionData = await tenantContract.getElection(subdomain);
+    async createElection(memberTenantId: string, subdomain: string, electionAddress: string) {
+        const memberTenant = await this.memberTenantModel.findById(memberTenantId);
+        if (!memberTenant || !memberTenant.tenantAddress) {
+            throw new Error('Tenant address not set in MemberTenant');
+        }
 
-    //     return {
-    //         electionAddress: electionData[0],
-    //         electionName: electionData[1],
-    //         electionDescription: electionData[2],
-    //     };
-    // }
+        const tenantContract = new ethers.Contract(memberTenant.tenantAddress, tenantAbi.abi, this.wallet);
+
+        try {
+            const tx = await tenantContract.createElection(subdomain, electionAddress);
+            await tx.wait();
+            return { success: true, subdomain, electionAddress };
+        } catch (error) {
+            throw new BadRequestException(`Error al crear la elección: ${error.message}`);
+        }
+    }
+
+    // Método para obtener los detalles de una elección en el contrato Tenant
+    async getElectionDetails(memberTenantId: string, subdomain: string) {
+        const memberTenant = await this.memberTenantModel.findById(memberTenantId);
+        if (!memberTenant || !memberTenant.tenantAddress) {
+            throw new Error('Tenant address not set in MemberTenant');
+        }
+
+        const tenantContract = new ethers.Contract(memberTenant.tenantAddress, tenantAbi.abi, this.wallet);
+
+        try {
+            const electionData = await tenantContract.getElection(subdomain);
+            console.log(electionData)
+            return {
+                electionAddress: electionData[0],
+                electionName: electionData[1],
+                electionDescription: electionData[2],
+            };
+        } catch (error) {
+            throw new BadRequestException(`Error al obtener los detalles de la elección: ${error.message}`);
+        }
+    }
 }

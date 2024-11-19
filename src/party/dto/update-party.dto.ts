@@ -15,10 +15,6 @@ export class UpdatePartyDto {
 
     @IsOptional()
     @IsString()
-    president?: string;
-
-    @IsOptional()
-    @IsString()
     ideology?: string;
 
     @IsOptional()

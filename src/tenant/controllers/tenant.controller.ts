@@ -5,19 +5,25 @@ import {
     HttpCode,
     HttpStatus,
     UseGuards,
+    Req,
 } from '@nestjs/common';
 import { TenantService } from '../services/tenant.service';
 import { TokenAuthGuard } from 'src/auth/guard';
+import { TenantIdGuard } from '../guard';
+import { Request } from 'express';
 
 @Controller('tenant')
 export class TenantController {
     constructor(private readonly tenantService: TenantService) { }
 
-    @Get('user/:userId')
+    @Get('user')
     @UseGuards(TokenAuthGuard)
     @HttpCode(HttpStatus.OK)
-    public async getTenantsByUser(@Param('userId') userId: string) {
+    public async getTenantsByUser(
+        @Req() req: Request,
+    ) {
         const statusCode = HttpStatus.OK;
+        const userId = req.userId;
         const tenants = await this.tenantService.findAllTenantsForUser(userId);
         return {
             statusCode,
@@ -28,14 +34,15 @@ export class TenantController {
         };
     }
 
-    @Get(':subdomain/user/:userId')
+    @Get(':subdomain/user')
     @UseGuards(TokenAuthGuard)
     @HttpCode(HttpStatus.OK)
     public async getTenantBySubdomainAndUser(
+        @Req() req: Request,
         @Param('subdomain') subdomain: string,
-        @Param('userId') userId: string,
     ) {
         const statusCode = HttpStatus.OK;
+        const userId = req.userId;
         const tenant = await this.tenantService.findTenantUser(subdomain, userId);
         return {
             statusCode,

@@ -1,12 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException, Param, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, FilterQuery, Types } from 'mongoose';
+import { Model, FilterQuery, Types, isValidObjectId } from 'mongoose';
 import { Party } from '../entity';
 import { IPartyOptions } from '../interface';
 import { CreatePartyDto } from '../dto/create-party.dto';
 import { UpdatePartyDto } from '../dto/update-party.dto';
 import { CloudinaryService } from 'src/cloudinary/services';
-import { MemberTenant } from 'src/tenant/entity';
 import { TenantService } from 'src/tenant/services/tenant.service';
 
 @Injectable()
@@ -17,15 +16,25 @@ export class PartyService {
     private readonly tenantService: TenantService
   ) { }
 
-  async findAllParties(tenantId: string, userId: string, query: IPartyOptions): Promise<Party[]> {
+  async findAllParties(userId: string, tenantId: string, query: IPartyOptions): Promise<Party[]> {
     try {
-      const { skip = 0, limit = 10, filter = {} } = query;
+
+      if (!isValidObjectId(userId)) {
+        throw new BadRequestException(`The value ${userId} is not a valid ObjectId.`);
+      }
+
+      if (!isValidObjectId(tenantId)) {
+        throw new BadRequestException(`The value ${tenantId} is not a valid ObjectId.`);
+      }
+
+      const { skip = 0, limit = 1, filter = {} } = query;
 
       const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
       if (!isMember) {
         throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
       }
 
+      console.log(filter)
       const parties = await this.partyModel
         .find(filter)
         .skip(skip)
@@ -55,7 +64,13 @@ export class PartyService {
 
   async createParty(tenantId: string, userId: string, createPartyDto: CreatePartyDto): Promise<Party> {
     try {
-      const tenantObjectId = new Types.ObjectId(tenantId);
+      if (!isValidObjectId(userId)) {
+        throw new BadRequestException(`The value ${userId} is not a valid ObjectId.`);
+      }
+
+      if (!isValidObjectId(tenantId)) {
+        throw new BadRequestException(`The value ${tenantId} is not a valid ObjectId.`);
+      }
 
       const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
       if (!isMember) {
@@ -63,7 +78,7 @@ export class PartyService {
       }
 
       const existingParties = await this.findOrParty([
-        { tenant: tenantObjectId, name: createPartyDto.name },
+        { tenant: tenantId, name: createPartyDto.name },
       ]);
 
       if (existingParties.length) {
@@ -78,7 +93,7 @@ export class PartyService {
 
       const createdParty = new this.partyModel({
         ...createPartyDto,
-        tenant: tenantObjectId,
+        tenant: tenantId,
         logo,
       });
 
@@ -93,6 +108,14 @@ export class PartyService {
 
   async findOne(id: string, userId: string, tenantId: string): Promise<Party> {
     try {
+
+      if (!isValidObjectId(userId)) {
+        throw new BadRequestException(`The value ${userId} is not a valid ObjectId.`);
+      }
+
+      if (!isValidObjectId(tenantId)) {
+        throw new BadRequestException(`The value ${tenantId} is not a valid ObjectId.`);
+      }
 
       const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
       if (!isMember) {
@@ -114,7 +137,15 @@ export class PartyService {
   async update(id: string, userId: string, tenantId: string, updatePartyDto: UpdatePartyDto): Promise<Party> {
     try {
 
-      const tenantObjectId = new Types.ObjectId(tenantId);
+
+      if (!isValidObjectId(userId)) {
+        throw new BadRequestException(`The value ${userId} is not a valid ObjectId.`);
+      }
+
+      if (!isValidObjectId(tenantId)) {
+        throw new BadRequestException(`The value ${tenantId} is not a valid ObjectId.`);
+      }
+
 
       const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
       if (!isMember) {
@@ -123,7 +154,7 @@ export class PartyService {
 
       if (updatePartyDto.name) {
         const existingParty = await this.partyModel.findOne({
-          tenant: tenantObjectId,
+          tenant: tenantId,
           name: updatePartyDto.name,
           _id: { $ne: id },
         });
@@ -139,10 +170,10 @@ export class PartyService {
       }
 
       const updatedParty = await this.partyModel.findOneAndUpdate(
-        { _id: id, tenant: tenantObjectId },
+        { _id: id, tenant: tenantId },
         {
           ...updatePartyDto,
-          ...(logo && { logo }), // Only update logo if a new file is provided
+          ...(logo && { logo }),
         },
         { new: true },
       ).exec();
@@ -158,14 +189,20 @@ export class PartyService {
 
   async remove(id: string, userId: string, tenantId: string): Promise<Party> {
     try {
-      const tenantObjectId = new Types.ObjectId(tenantId);
+      if (!isValidObjectId(userId)) {
+        throw new BadRequestException(`The value ${userId} is not a valid ObjectId.`);
+      }
+
+      if (!isValidObjectId(tenantId)) {
+        throw new BadRequestException(`The value ${tenantId} is not a valid ObjectId.`);
+      }
 
       const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
       if (!isMember) {
         throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
       }
 
-      const deletedParty = await this.partyModel.findOneAndDelete({ _id: id, tenant: tenantObjectId }).exec();
+      const deletedParty = await this.partyModel.findOneAndDelete({ _id: id, tenant: tenantId }).exec();
       if (!deletedParty) {
         throw new NotFoundException(`Party with ID ${id} not found for tenant ${tenantId}`);
       }

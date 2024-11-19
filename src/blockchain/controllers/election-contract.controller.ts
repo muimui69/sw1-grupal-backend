@@ -1,58 +1,55 @@
 import { Controller, Get, Post, Param, Body } from '@nestjs/common';
-import { ElectionContractService } from '../services';
+import { ElectionContractService } from '../services/election-contract.service';
 
 @Controller('blockchain/election')
 export class ElectionContractController {
     constructor(private readonly electionService: ElectionContractService) { }
 
-    // @Get('candidates')
-    // async getCandidates() {
-    //     return this.electionService.getCandidates();
-    // }
+    //no usar
+    @Post('deploy')
+    async deployElectionContract(
+        @Body('userId') userId: string,
+        @Body('tenantId') tenantId: string
+    ) {
+        return await this.electionService.deployElectionContract(userId, tenantId);
+    }
 
-    // @Get('numOfCandidates')
-    // async getNumOfCandidates() {
-    //     return this.electionService.getNumOfCandidates();
-    // }
+    @Post('set-details')
+    async setElectionDetails(
+        @Body('electionAddress') electionAddress: string,
+        @Body('electionName') electionName: string,
+        @Body('electionDescription') electionDescription: string
+    ) {
+        return await this.electionService.setElectionDetails(electionAddress, electionName, electionDescription);
+    }
 
-    // @Post('create-candidate')
-    // async addCandidate(
-    //     @Body('name') name: string,
-    //     @Body('description') description: string,
-    //     @Body('imgHash') imgHash: string,
-    //     @Body('email') email: string,
-    // ) {
-    //     return await this.electionService.addCandidate(name, description, imgHash, email);
-    // }
+    @Post('add-candidate')
+    async addCandidate(
+        @Body('memberTenantId') memberTenantId: string,
+        @Body('name') name: string,
+        @Body('description') description: string,
+        @Body('imgHash') imgHash: string,
+        @Body('email') email: string,
+        @Body('partyId') partyId: string
+    ) {
+        return await this.electionService.addCandidate(memberTenantId, name, description, imgHash, email, partyId);
+    }
 
-    // @Post('vote')
-    // async voteForCandidate(@Body('candidateId') candidateId: number) {
-    //     return this.electionService.voteForCandidate(candidateId);
-    // }
+    @Post('vote')
+    async vote(
+        @Body('memberTenantId') memberTenantId: string,
+        @Body('candidateId') candidateId: number
+    ) {
+        return await this.electionService.vote(memberTenantId, candidateId);
+    }
 
-    // @Get('totalVotes')
-    // async getTotalVotes() {
-    //     return this.electionService.getTotalVotes();
-    // }
+    @Post('end')
+    async endElection(@Body('memberTenantId') memberTenantId: string) {
+        return await this.electionService.endElection(memberTenantId);
+    }
 
-    // @Get('result')
-    // async getElectionResult() {
-    //     return this.electionService.getElectionResult();
-    // }
-
-    // @Post('end')
-    // async endElection() {
-    //     return this.electionService.endElection();
-    // }
-
-    // @Get('status')
-    // async getElectionStatus() {
-    //     return this.electionService.getElectionStatus();
-    // }
-
-    // @Post('setContractAddress')
-    // async setElectionContract(@Body('address') address: string) {
-    //     this.electionService.setElectionContract(address);
-    //     return { message: 'Election contract address set successfully' };
-    // }
+    @Get('candidates/:memberTenantId')
+    async getAllCandidates(@Param('memberTenantId') memberTenantId: string) {
+        return await this.electionService.getAllCandidates(memberTenantId);
+    }
 }

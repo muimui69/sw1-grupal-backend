@@ -1,39 +1,49 @@
-import { Controller, Get, Post, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, BadRequestException } from '@nestjs/common';
 import { TenantContractService } from '../services/tenant-contract.service';
 
 @Controller('blockchain/tenant')
 export class TenantContractController {
   constructor(private readonly tenantContractService: TenantContractService) { }
 
-  // @Post('deploy')
-  // async deployTenant(
-  //   @Body('user-id') userId: string,
-  //   @Body('tenant-id') tenantId: string
-  // ) {
-  //   return await this.tenantContractService.deployTenant(userId, tenantId);
-  // }
+  //no usar
+  @Post('deploy')
+  async deployTenant(
+    @Body('userId') userId: string,
+    @Body('tenantId') tenantId: string
+  ) {
+    if (!userId || !tenantId) {
+      throw new BadRequestException('userId y tenantId son requeridos.');
+    }
+    return await this.tenantContractService.deployTenantContract(userId, tenantId);
+  }
 
-  // @Post('createElection')
-  // async createElection(
-  //   @Body('memberTenantId') memberTenantId: string,
-  //   @Body('subdomain') subdomain: string,
-  //   @Body('electionAddress') electionAddress: string
-  // ) {
-  //   return await this.tenantContractService.createElection(
-  //     memberTenantId,
-  //     subdomain,
-  //     electionAddress
-  //   );
-  // }
+  @Post('create-election')
+  async createElection(
+    @Body('memberTenantId') memberTenantId: string,
+    @Body('subdomain') subdomain: string,
+    @Body('electionAddress') electionAddress: string
+  ) {
+    if (!memberTenantId || !subdomain || !electionAddress) {
+      throw new BadRequestException('Todos los parámetros son requeridos.');
+    }
+    return await this.tenantContractService.createElection(
+      memberTenantId,
+      subdomain,
+      electionAddress
+    );
+  }
 
-  // @Get('election/:memberTenantId/:subdomain')
-  // async getElectionDetails(
-  //   @Param('memberTenantId') memberTenantId: string,
-  //   @Param('subdomain') subdomain: string
-  // ) {
-  //   return await this.tenantContractService.getElectionDetails(
-  //     memberTenantId,
-  //     subdomain
-  //   );
-  // }
+  @Get('election/:memberTenantId/:subdomain')
+  async getElectionDetails(
+    @Param('memberTenantId') memberTenantId: string,
+    @Param('subdomain') subdomain: string
+  ) {
+    if (!memberTenantId || !subdomain) {
+      throw new BadRequestException('memberTenantId y subdomain son requeridos.');
+    }
+    return await this.tenantContractService.getElectionDetails(
+      memberTenantId,
+      subdomain
+    );
+  }
 }

@@ -4,7 +4,7 @@ import { PartyService } from '../services/party.service';
 import { CreatePartyDto } from '../dto/create-party.dto';
 import { UpdatePartyDto } from '../dto/update-party.dto';
 import { Multer } from 'multer';
-import { isValidObjectId, Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { TokenAuthGuard } from 'src/auth/guard';
 import { TenantIdGuard } from 'src/tenant/guard';
 import { Request } from 'express';
@@ -31,14 +31,6 @@ export class PartyController {
     const userId = req.userId;
     const tenantId = req.tenantId;
 
-    if (!isValidObjectId(userId)) {
-      throw new BadRequestException(`The value ${userId} is not a valid ObjectId.`);
-    }
-
-    if (!isValidObjectId(tenantId)) {
-      throw new BadRequestException(`The value ${tenantId} is not a valid ObjectId.`);
-    }
-
     const partyCreate = await this.partyService.createParty(tenantId, userId, createPartyDto);
     return {
       statusCode,
@@ -51,17 +43,14 @@ export class PartyController {
 
   @Get()
   @UseGuards(TokenAuthGuard, TenantIdGuard)
-  async findAll(@Req() req: Request) {
-
+  async findAll(
+    @Req() req: Request
+  ) {
     const statusCode = HttpStatus.OK;
     const userId = req.userId;
     const tenantId = req.tenantId;
 
-    if (!isValidObjectId(userId) || !isValidObjectId(tenantId)) {
-      throw new BadRequestException(`One or both ObjectIds are invalid: userId (${userId}) or tenantId (${tenantId})`);
-    }
-
-    const partyList = await this.partyService.findAllParties(tenantId, userId, {
+    const partyList = await this.partyService.findAllParties(userId, tenantId, {
       filter: { tenant: new Types.ObjectId(tenantId) },
     });
 
@@ -85,11 +74,6 @@ export class PartyController {
 
     const userId = req.userId;
     const tenantId = req.tenantId;
-
-
-    if (!isValidObjectId(userId) || !isValidObjectId(tenantId)) {
-      throw new BadRequestException(`One or both ObjectIds are invalid: userId (${userId}) or tenantId (${tenantId})`);
-    }
 
     const party = await this.partyService.findOne(id, userId, tenantId);
     return {
@@ -119,11 +103,6 @@ export class PartyController {
     const userId = req.userId;
     const tenantId = req.tenantId;
 
-
-    if (!isValidObjectId(userId) || !isValidObjectId(tenantId)) {
-      throw new BadRequestException(`One or both ObjectIds are invalid: userId (${userId}) or tenantId (${tenantId})`);
-    }
-
     const partyUpdate = await this.partyService.update(id, userId, tenantId, updatePartyDto);
     return {
       statusCode,
@@ -142,9 +121,6 @@ export class PartyController {
   ) {
     const userId = req.userId;
     const tenantId = req.tenantId;
-    if (!isValidObjectId(userId) || !isValidObjectId(tenantId)) {
-      throw new BadRequestException(`One or both ObjectIds are invalid: userId (${userId}) or tenantId (${tenantId})`);
-    }
     await this.partyService.remove(id, userId, tenantId);
     return {
       statusCode: 200,

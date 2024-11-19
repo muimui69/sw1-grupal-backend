@@ -10,6 +10,7 @@ import { UserService } from 'src/user/services';
 import { Tenant } from '../entity';
 import { Plan } from 'src/constant';
 import { InjectConnection } from '@nestjs/mongoose';
+import { ElectionContractService, TenantContractService } from 'src/blockchain/services';
 
 @Injectable()
 export class SuscriptionService {
@@ -19,6 +20,8 @@ export class SuscriptionService {
     private readonly configService: ConfigService,
     private readonly tenantService: TenantService,
     private readonly userService: UserService,
+    private readonly electionContractService: ElectionContractService,
+    private readonly tenantContractService: TenantContractService,
     @InjectConnection() private readonly connection: Connection,
   ) {
     this.stripe = new Stripe(this.configService.get<string>("stripe_key_api"))
@@ -103,7 +106,7 @@ export class SuscriptionService {
           domain: data.domain
         }
       ]);
-      if (findTenant.length)
+      if (findTenant.length > 0)
         throw new BadRequestException("Tenant ya en uso");
 
       const findUser = this.userService.findIdUser(data.userId);
@@ -124,6 +127,10 @@ export class SuscriptionService {
       await session.commitTransaction();
       session.endSession();
 
+      const electionContract = await this.electionContractService.deployElectionContract(data.userId, String(createTenant._id));
+      await this.electionContractService.setElectionDetails(electionContract.electionAddress, data.domain, `Elecciones de ${data.domain}`);
+      const tenantContract = await this.tenantContractService.deployTenantContract(data.userId, String(createTenant._id));
+      await this.tenantContractService.createElection(String(tenantContract._id), data.domain, electionContract.electionAddress);
 
       return createTenant;
     } catch (err) {

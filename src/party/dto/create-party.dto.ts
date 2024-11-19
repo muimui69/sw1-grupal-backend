@@ -13,9 +13,6 @@ export class CreatePartyDto {
     abbreviation: string;
 
     @IsString()
-    president: string;
-
-    @IsString()
     ideology: string;
 
     @IsOptional()

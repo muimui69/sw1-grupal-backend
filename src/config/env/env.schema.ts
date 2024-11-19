@@ -12,4 +12,5 @@ export const envSchema = Joi.object({
   CLOUDINARY_API_SECRET: Joi.string().required(),
   BLOCKCHAIN_URL: Joi.string().required(),
   WALLET_PRIVATE_KEY: Joi.string().required(),
+  HARDHAT_MICROSERVICE_URL: Joi.string().required()
 })

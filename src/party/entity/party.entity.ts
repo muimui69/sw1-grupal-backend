@@ -17,9 +17,6 @@ export class Party extends Document {
     abbreviation: string;
 
     @Prop()
-    president: string;
-
-    @Prop()
     ideology: string;
 
     @Prop()

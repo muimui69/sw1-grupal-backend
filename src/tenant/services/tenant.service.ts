@@ -1,7 +1,7 @@
 import { BadRequestException, Body, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Configuration, MemberTenant, Tenant } from '../entity';
-import { ClientSession, FilterQuery, Model, Types } from 'mongoose';
+import { ClientSession, FilterQuery, isValidObjectId, Model, Types } from 'mongoose';
 import { ICreateMember, ICreateTenant } from '../interface';
 import { Plan } from 'src/constant';
 
@@ -45,7 +45,7 @@ export class TenantService {
   public async findOrTenant(OR: FilterQuery<Tenant>[]): Promise<Tenant[]> {
     const findTenant = await this.tenantModel.find({
       $or: OR
-    })
+    }).exec();
     return findTenant;
   }
 
@@ -89,7 +89,7 @@ export class TenantService {
   }
 
   public async findTenantUser(subdomain: string, userId: string): Promise<Tenant> {
-    if (!Types.ObjectId.isValid(userId)) {
+    if (!isValidObjectId(userId)) {
       throw new BadRequestException("El ID de usuario proporcionado no es válido.");
     }
 
@@ -114,10 +114,9 @@ export class TenantService {
 
 
   public async findAllTenantsForUser(userId: string): Promise<Tenant[]> {
-    if (!Types.ObjectId.isValid(userId)) {
-      throw new BadRequestException("El ID de usuario proporcionado no es válido.");
+    if (!isValidObjectId(userId)) {
+      throw new BadRequestException(`The value ${userId} is not a valid ObjectId.`);
     }
-
     const memberTenants = await this.memberModel.find({
       user: userId,
     }).populate('tenant');
@@ -139,8 +138,8 @@ export class TenantService {
 
   async isUserMemberOfTenant(userId: string, tenantId: string): Promise<boolean> {
     const member = await this.memberModel.findOne({
-      user: new Types.ObjectId(userId),
-      tenant: new Types.ObjectId(tenantId),
+      user: userId,
+      tenant: tenantId,
     }).exec();
     return !!member;
   }
