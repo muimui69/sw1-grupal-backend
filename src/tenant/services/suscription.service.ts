@@ -124,13 +124,14 @@ export class SuscriptionService {
         tenantId: String(createTenant._id),
         userId: data.userId,
       }, "owner");
-      await session.commitTransaction();
-      session.endSession();
 
       const electionContract = await this.electionContractService.deployElectionContract(data.userId, String(createTenant._id));
       await this.electionContractService.setElectionDetails(electionContract.electionAddress, data.domain, `Elecciones de ${data.domain}`);
       const tenantContract = await this.tenantContractService.deployTenantContract(data.userId, String(createTenant._id));
       await this.tenantContractService.createElection(String(tenantContract._id), data.domain, electionContract.electionAddress);
+
+      await session.commitTransaction();
+      session.endSession();
 
       return createTenant;
     } catch (err) {

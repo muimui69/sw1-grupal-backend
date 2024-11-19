@@ -27,7 +27,7 @@ export class PartyService {
         throw new BadRequestException(`The value ${tenantId} is not a valid ObjectId.`);
       }
 
-      const { skip = 0, limit = 1, filter = {} } = query;
+      const { skip = 0, limit = 10, filter = {} } = query;
 
       const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
       if (!isMember) {
@@ -62,7 +62,7 @@ export class PartyService {
     }
   }
 
-  async createParty(tenantId: string, userId: string, createPartyDto: CreatePartyDto): Promise<Party> {
+  async createParty(userId: string, tenantId: string, createPartyDto: CreatePartyDto): Promise<Party> {
     try {
       if (!isValidObjectId(userId)) {
         throw new BadRequestException(`The value ${userId} is not a valid ObjectId.`);
@@ -91,9 +91,13 @@ export class PartyService {
         logo = result.secure_url;
       }
 
+      const userObjectId = new Types.ObjectId(userId);
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
       const createdParty = new this.partyModel({
         ...createPartyDto,
-        tenant: tenantId,
+        tenant: tenantObjectId,
+        user: userObjectId,
         logo,
       });
 
@@ -122,9 +126,8 @@ export class PartyService {
         throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
       }
 
-      const tenantObjectId = new Types.ObjectId(tenantId);
 
-      const party = await this.partyModel.findOne({ _id: id, tenant: tenantObjectId }).exec();
+      const party = await this.partyModel.findOne({ _id: id, tenant: tenantId, user: userId }).exec();
       if (!party) {
         throw new NotFoundException(`Party with ID ${id} not found for tenant ${tenantId}`);
       }
@@ -146,7 +149,6 @@ export class PartyService {
         throw new BadRequestException(`The value ${tenantId} is not a valid ObjectId.`);
       }
 
-
       const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
       if (!isMember) {
         throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
@@ -155,6 +157,7 @@ export class PartyService {
       if (updatePartyDto.name) {
         const existingParty = await this.partyModel.findOne({
           tenant: tenantId,
+          user: userId,
           name: updatePartyDto.name,
           _id: { $ne: id },
         });
@@ -202,7 +205,7 @@ export class PartyService {
         throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
       }
 
-      const deletedParty = await this.partyModel.findOneAndDelete({ _id: id, tenant: tenantId }).exec();
+      const deletedParty = await this.partyModel.findOneAndDelete({ _id: id, tenant: tenantId, user: userId }).exec();
       if (!deletedParty) {
         throw new NotFoundException(`Party with ID ${id} not found for tenant ${tenantId}`);
       }

@@ -31,7 +31,7 @@ export class PartyController {
     const userId = req.userId;
     const tenantId = req.tenantId;
 
-    const partyCreate = await this.partyService.createParty(tenantId, userId, createPartyDto);
+    const partyCreate = await this.partyService.createParty(userId, tenantId, createPartyDto);
     return {
       statusCode,
       message: "Partido creado",
@@ -51,7 +51,10 @@ export class PartyController {
     const tenantId = req.tenantId;
 
     const partyList = await this.partyService.findAllParties(userId, tenantId, {
-      filter: { tenant: new Types.ObjectId(tenantId) },
+      filter: {
+        tenant: new Types.ObjectId(tenantId),
+        user: new Types.ObjectId(userId)
+      },
     });
 
     return {
