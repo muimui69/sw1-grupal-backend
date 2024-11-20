@@ -7,7 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { MemberTenant } from 'src/tenant/entity';
 import electionAbi from '../abis/contracts/Election.json';
-import { Candidate } from '../interfaces/election-create';
+import { Candidate, CandidateWithId } from '../interfaces/election-create';
 
 @Injectable()
 export class ElectionContractService {
@@ -95,30 +95,6 @@ export class ElectionContractService {
     }
   }
 
-  async addCandidate(
-    memberTenantId: string,
-    name: string,
-    description: string,
-    imgHash: string,
-    email: string,
-    partyId: string
-  ) {
-    const memberTenant = await this.memberTenantModel.findById(memberTenantId);
-    if (!memberTenant || !memberTenant.electionAddress) {
-      throw new Error('Election address not set in MemberTenant');
-    }
-
-    const electionContract = new ethers.Contract(memberTenant.electionAddress, electionAbi.abi, this.wallet);
-
-    try {
-      const tx = await electionContract.addCandidate(name, description, imgHash, email, partyId);
-      await tx.wait();
-      return { success: true, name };
-    } catch (error) {
-      throw new BadRequestException(`Error al agregar el candidato: ${error.message}`);
-    }
-  }
-
   async vote(memberTenantId: string, candidateId: number) {
     const memberTenant = await this.memberTenantModel.findById(memberTenantId);
     if (!memberTenant || !memberTenant.electionAddress) {
@@ -153,7 +129,7 @@ export class ElectionContractService {
     }
   }
 
-  async getAllCandidates(memberTenantId: string): Promise<Candidate[]> {
+  async getAllCandidates(memberTenantId: string): Promise<CandidateWithId[]> {
     const memberTenant = await this.memberTenantModel.findById(memberTenantId);
     if (!memberTenant || !memberTenant.electionAddress) {
       throw new Error('Election address not set in MemberTenant');
@@ -163,22 +139,117 @@ export class ElectionContractService {
 
     try {
       const candidatesData = await electionContract.getAllCandidates();
-
-      const candidates: Candidate[] = candidatesData.map(this.mapToCandidate);
-
+      const candidates: CandidateWithId[] = candidatesData.map(this.mapToCandidateWithId);
       return candidates;
     } catch (error) {
       throw new BadRequestException(`Error al obtener los candidatos: ${error.message}`);
     }
   }
 
-  mapToCandidate(data: Candidate) {
+  async addCandidate(
+    memberTenantId: string,
+    name: string,
+    description: string,
+    imgHash: string,
+    email: string,
+    partyId: string
+  ) {
+    const memberTenant = await this.memberTenantModel.findById(memberTenantId);
+    if (!memberTenant || !memberTenant.electionAddress) {
+      throw new Error('Election address not set in MemberTenant');
+    }
+
+    const electionContract = new ethers.Contract(memberTenant.electionAddress, electionAbi.abi, this.wallet);
+
+    try {
+      const tx = await electionContract.addCandidate(name, description, imgHash, email, partyId);
+      await tx.wait();
+      return {
+        name,
+        description,
+        imgHash,
+        email,
+        partyId
+      }
+    } catch (error) {
+      throw new BadRequestException(`Error al agregar el candidato: ${error.message}`);
+    }
+  }
+
+  async getCandidate(memberTenantId: string, candidateId: number): Promise<CandidateWithId> {
+    const memberTenant = await this.memberTenantModel.findById(memberTenantId);
+    if (!memberTenant || !memberTenant.electionAddress) {
+      throw new Error('Election address not set in MemberTenant');
+    }
+
+    const electionContract = new ethers.Contract(memberTenant.electionAddress, electionAbi.abi, this.wallet);
+
+    try {
+      const candidateData = await electionContract.getCandidate(candidateId);
+      return this.mapToCandidateWithId(candidateData);
+    } catch (error) {
+      throw new BadRequestException(`Error al obtener el candidato: ${error.message}`);
+    }
+  }
+
+  async patchCandidate(
+    memberTenantId: string,
+    candidateId: number,
+    newName: string,
+    newDescription: string,
+    newImgHash: string,
+    newEmail: string,
+    newPartyId: string
+  ) {
+    const memberTenant = await this.memberTenantModel.findById(memberTenantId);
+    if (!memberTenant || !memberTenant.electionAddress) {
+      throw new Error('Election address not set in MemberTenant');
+    }
+
+    const electionContract = new ethers.Contract(memberTenant.electionAddress, electionAbi.abi, this.wallet);
+
+    try {
+      const tx = await electionContract.updateCandidate(candidateId, newName, newDescription, newImgHash, newEmail, newPartyId);
+      await tx.wait();
+      return {
+        name: newName,
+        description: newDescription,
+        imgHash: newImgHash,
+        email: newEmail,
+        partyId: newPartyId
+      }
+    } catch (error) {
+      throw new BadRequestException(`Error al actualizar el candidato: ${error.message}`);
+    }
+  }
+
+  async deleteCandidate(memberTenantId: string, candidateId: number) {
+    const memberTenant = await this.memberTenantModel.findById(memberTenantId);
+    if (!memberTenant || !memberTenant.electionAddress) {
+      throw new Error('Election address not set in MemberTenant');
+    }
+
+    const electionContract = new ethers.Contract(memberTenant.electionAddress, electionAbi.abi, this.wallet);
+
+    try {
+      const tx = await electionContract.deleteCandidate(candidateId);
+      await tx.wait();
+      // return { success: true, candidateId };
+    } catch (error) {
+      throw new BadRequestException(`Error al eliminar el candidato: ${error.message}`);
+    }
+  }
+
+  mapToCandidateWithId(data: CandidateWithId): CandidateWithId {
     return {
-      name: data[0],
-      description: data[1],
-      imgHash: data[2],
-      voteCount: Number(data[3]),
-      email: data[4]
+      id: Number(data[0]),
+      name: data[1],
+      description: data[2],
+      imgHash: data[3],
+      voteCount: Number(data[4]),
+      email: data[5],
+      partyId: data[6],
+      isActive: data[7],
     };
   }
 

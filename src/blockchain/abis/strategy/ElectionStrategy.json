@@ -77,6 +77,11 @@
                     "internalType": "string",
                     "name": "",
                     "type": "string"
+                },
+                {
+                    "internalType": "string",
+                    "name": "",
+                    "type": "string"
                 }
             ],
             "stateMutability": "view",

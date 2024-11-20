@@ -138,8 +138,8 @@ export class TenantService {
 
   async isUserMemberOfTenant(userId: string, tenantId: string): Promise<boolean> {
     const member = await this.memberModel.findOne({
-      user: userId,
-      tenant: tenantId,
+      user: new Types.ObjectId(userId),
+      tenant: new Types.ObjectId(tenantId),
     }).exec();
     return !!member;
   }

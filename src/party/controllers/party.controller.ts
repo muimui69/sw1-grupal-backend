@@ -91,7 +91,7 @@ export class PartyController {
   @Patch(':id')
   @UseGuards(TokenAuthGuard, TenantIdGuard)
   @UseInterceptors(FileInterceptor('logo'))
-  async update(
+  async patch(
     @Param('id', ValidateObjectIdPipe) id: string,
     @Req() req: Request,
     @Body() updatePartyDto: UpdatePartyDto,
@@ -106,7 +106,7 @@ export class PartyController {
     const userId = req.userId;
     const tenantId = req.tenantId;
 
-    const partyUpdate = await this.partyService.update(id, userId, tenantId, updatePartyDto);
+    const partyUpdate = await this.partyService.patchParty(id, userId, tenantId, updatePartyDto);
     return {
       statusCode,
       message: "Partido actualizado",
@@ -122,11 +122,12 @@ export class PartyController {
     @Param('id', ValidateObjectIdPipe) id: string,
     @Req() req: Request
   ) {
+    const statusCode = HttpStatus.OK;
     const userId = req.userId;
     const tenantId = req.tenantId;
-    await this.partyService.remove(id, userId, tenantId);
+    await this.partyService.removeParty(id, userId, tenantId);
     return {
-      statusCode: 200,
+      statusCode,
       message: "Partido eliminado",
     };
   }

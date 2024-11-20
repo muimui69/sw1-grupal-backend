@@ -34,7 +34,6 @@ export class PartyService {
         throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
       }
 
-      console.log(filter)
       const parties = await this.partyModel
         .find(filter)
         .skip(skip)
@@ -77,8 +76,11 @@ export class PartyService {
         throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
       }
 
+      const userObjectId = new Types.ObjectId(userId);
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
       const existingParties = await this.findOrParty([
-        { tenant: tenantId, name: createPartyDto.name },
+        { tenant: tenantObjectId, user: userObjectId, name: createPartyDto.name },
       ]);
 
       if (existingParties.length) {
@@ -90,9 +92,6 @@ export class PartyService {
         const result = await this.cloudinaryService.uploadImage(createPartyDto.logo);
         logo = result.secure_url;
       }
-
-      const userObjectId = new Types.ObjectId(userId);
-      const tenantObjectId = new Types.ObjectId(tenantId);
 
       const createdParty = new this.partyModel({
         ...createPartyDto,
@@ -126,8 +125,10 @@ export class PartyService {
         throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
       }
 
+      const userObjectId = new Types.ObjectId(userId);
+      const tenantObjectId = new Types.ObjectId(tenantId);
 
-      const party = await this.partyModel.findOne({ _id: id, tenant: tenantId, user: userId }).exec();
+      const party = await this.partyModel.findOne({ _id: id, tenant: tenantObjectId, user: userObjectId }).exec();
       if (!party) {
         throw new NotFoundException(`Party with ID ${id} not found for tenant ${tenantId}`);
       }
@@ -137,9 +138,13 @@ export class PartyService {
     }
   }
 
-  async update(id: string, userId: string, tenantId: string, updatePartyDto: UpdatePartyDto): Promise<Party> {
+  async patchParty(id: string, userId: string, tenantId: string, updatePartyDto: UpdatePartyDto): Promise<Party> {
     try {
 
+
+      if (!isValidObjectId(id)) {
+        throw new BadRequestException(`The value ${id} is not a valid ObjectId.`);
+      }
 
       if (!isValidObjectId(userId)) {
         throw new BadRequestException(`The value ${userId} is not a valid ObjectId.`);
@@ -154,10 +159,14 @@ export class PartyService {
         throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
       }
 
+      const userObjectId = new Types.ObjectId(userId);
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
+
       if (updatePartyDto.name) {
         const existingParty = await this.partyModel.findOne({
-          tenant: tenantId,
-          user: userId,
+          tenant: tenantObjectId,
+          user: userObjectId,
           name: updatePartyDto.name,
           _id: { $ne: id },
         });
@@ -173,7 +182,7 @@ export class PartyService {
       }
 
       const updatedParty = await this.partyModel.findOneAndUpdate(
-        { _id: id, tenant: tenantId },
+        { _id: id, tenant: tenantObjectId, user: userObjectId },
         {
           ...updatePartyDto,
           ...(logo && { logo }),
@@ -190,7 +199,7 @@ export class PartyService {
     }
   }
 
-  async remove(id: string, userId: string, tenantId: string): Promise<Party> {
+  async removeParty(id: string, userId: string, tenantId: string): Promise<Party> {
     try {
       if (!isValidObjectId(userId)) {
         throw new BadRequestException(`The value ${userId} is not a valid ObjectId.`);
@@ -205,7 +214,10 @@ export class PartyService {
         throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
       }
 
-      const deletedParty = await this.partyModel.findOneAndDelete({ _id: id, tenant: tenantId, user: userId }).exec();
+      const userObjectId = new Types.ObjectId(userId);
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
+      const deletedParty = await this.partyModel.findOneAndDelete({ _id: id, tenant: tenantObjectId, user: userObjectId }).exec();
       if (!deletedParty) {
         throw new NotFoundException(`Party with ID ${id} not found for tenant ${tenantId}`);
       }
