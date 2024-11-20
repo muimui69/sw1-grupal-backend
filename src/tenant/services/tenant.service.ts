@@ -144,6 +144,22 @@ export class TenantService {
     return !!member;
   }
 
+  async getMemberTenantId(userId: string, tenantId: string): Promise<string | null> {
+
+    if (!isValidObjectId(userId)) {
+      throw new BadRequestException("El ID de usuario proporcionado no es válido.");
+    }
+    if (!isValidObjectId(tenantId)) {
+      throw new BadRequestException("El ID del tenant proporcionado no es válido.");
+    }
+
+    const member = await this.memberModel.findOne({
+      user: new Types.ObjectId(userId),
+      tenant: new Types.ObjectId(tenantId),
+    }).exec();
+
+    return member ? member._id.toString() : null;
+  }
 
 
 }

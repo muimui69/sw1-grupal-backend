@@ -9,8 +9,8 @@ import {
 } from '@nestjs/common';
 import { TenantService } from '../services/tenant.service';
 import { TokenAuthGuard } from 'src/auth/guard';
-import { TenantIdGuard } from '../guard';
 import { Request } from 'express';
+import { TenantIdGuard } from '../guard';
 
 @Controller('tenant')
 export class TenantController {
@@ -49,6 +49,26 @@ export class TenantController {
             message: 'Detalles del tenant para el usuario',
             data: {
                 tenant,
+            },
+        };
+    }
+
+
+    @Get('user/membertenantId')
+    @UseGuards(TokenAuthGuard, TenantIdGuard)
+    @HttpCode(HttpStatus.OK)
+    public async getMemberTenantId(
+        @Req() req: Request,
+    ) {
+        const statusCode = HttpStatus.OK;
+        const userId = req.userId;
+        const tenantId = req.tenantId;
+        const tenant = await this.tenantService.getMemberTenantId(userId, tenantId);
+        return {
+            statusCode,
+            message: 'Detalles del MemberTenant para el usuario',
+            data: {
+                memberTenantId: tenant
             },
         };
     }
