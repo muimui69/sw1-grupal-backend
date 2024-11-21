@@ -7,7 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { MemberTenant } from 'src/tenant/entity';
 import electionAbi from '../abis/contracts/Election.json';
-import { Candidate, CandidateWithId } from '../interfaces/election-create';
+import { CandidateWithId } from '../interfaces/election-create';
 
 @Injectable()
 export class ElectionContractService {

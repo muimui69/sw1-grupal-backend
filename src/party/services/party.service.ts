@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException, Param, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, FilterQuery, Types, isValidObjectId } from 'mongoose';
 import { Party } from '../entity';
@@ -8,222 +13,201 @@ import { UpdatePartyDto } from '../dto/update-party.dto';
 import { CloudinaryService } from 'src/cloudinary/services';
 import { TenantService } from 'src/tenant/services/tenant.service';
 
+/**
+ * Servicio para gestionar operaciones relacionadas con los partidos.
+ */
 @Injectable()
 export class PartyService {
   constructor(
-    @InjectModel(Party.name) private readonly partyModel: Model<Party>,
     private readonly cloudinaryService: CloudinaryService,
-    private readonly tenantService: TenantService
+    private readonly tenantService: TenantService,
+    @InjectModel(Party.name) private readonly partyModel: Model<Party>,
   ) { }
 
+  /**
+   * Valida si un usuario es miembro del tenant.
+   * @param userId ID del usuario.
+   * @param tenantId ID del tenant.
+   */
+  private async validateUserMembership(userId: string, tenantId: string): Promise<void> {
+    const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
+    if (!isMember) {
+      throw new UnauthorizedException('No tienes permiso para acceder a este tenant.');
+    }
+  }
+
+  /**
+   * Obtiene una lista de partidos según los filtros especificados.
+   * @param userId ID del usuario.
+   * @param tenantId ID del tenant.
+   * @param query Opciones de consulta.
+   * @returns Lista de partidos.
+   */
   async findAllParties(userId: string, tenantId: string, query: IPartyOptions): Promise<Party[]> {
-    try {
-
-      if (!isValidObjectId(userId)) {
-        throw new BadRequestException(`The value ${userId} is not a valid ObjectId.`);
-      }
-
-      if (!isValidObjectId(tenantId)) {
-        throw new BadRequestException(`The value ${tenantId} is not a valid ObjectId.`);
-      }
-
-      const { skip = 0, limit = 10, filter = {} } = query;
-
-      const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
-      if (!isMember) {
-        throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
-      }
-
-      const parties = await this.partyModel
-        .find(filter)
-        .skip(skip)
-        .limit(limit)
-        .exec();
-      return parties;
-    } catch (error) {
-      throw new BadRequestException('Failed to retrieve parties.');
+    if (!isValidObjectId(userId) || !isValidObjectId(tenantId)) {
+      throw new BadRequestException('IDs inválidos proporcionados.');
     }
+
+    await this.validateUserMembership(userId, tenantId);
+
+    const { skip = 0, limit = 10, filter = {} } = query;
+    return await this.partyModel
+      .find(filter)
+      .skip(skip)
+      .limit(limit)
+      .exec();
   }
 
+  /**
+   * Cuenta la cantidad de partidos según los filtros especificados.
+   * @param query Opciones de consulta.
+   * @returns Número total de partidos.
+   */
   async countParties(query: IPartyOptions): Promise<number> {
-    try {
-      return await this.partyModel.countDocuments(query.filter);
-    } catch (error) {
-      throw new BadRequestException('Failed to count parties.');
-    }
+    return await this.partyModel.countDocuments(query.filter);
   }
 
+  /**
+   * Busca partidos que cumplan con las condiciones especificadas.
+   * @param OR Filtros de búsqueda.
+   * @returns Lista de partidos encontrados.
+   */
   async findOrParty(OR: FilterQuery<Party>[]): Promise<Party[]> {
-    try {
-      return await this.partyModel.find({ $or: OR }).exec();
-    } catch (error) {
-      throw new BadRequestException('Error while searching for parties.');
-    }
+    return await this.partyModel.find({ $or: OR }).exec();
   }
 
+  /**
+   * Crea un nuevo partido.
+   * @param userId ID del usuario.
+   * @param tenantId ID del tenant.
+   * @param createPartyDto Datos del partido a crear.
+   * @returns Partido creado.
+   */
   async createParty(userId: string, tenantId: string, createPartyDto: CreatePartyDto): Promise<Party> {
-    try {
-      if (!isValidObjectId(userId)) {
-        throw new BadRequestException(`The value ${userId} is not a valid ObjectId.`);
-      }
+    if (!isValidObjectId(userId) || !isValidObjectId(tenantId)) {
+      throw new BadRequestException('IDs inválidos proporcionados.');
+    }
 
-      if (!isValidObjectId(tenantId)) {
-        throw new BadRequestException(`The value ${tenantId} is not a valid ObjectId.`);
-      }
+    await this.validateUserMembership(userId, tenantId);
 
-      const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
-      if (!isMember) {
-        throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
-      }
+    const existingParties = await this.findOrParty([
+      { tenant: new Types.ObjectId(tenantId), user: new Types.ObjectId(userId), name: createPartyDto.name },
+    ]);
 
-      const userObjectId = new Types.ObjectId(userId);
-      const tenantObjectId = new Types.ObjectId(tenantId);
+    if (existingParties.length) {
+      throw new BadRequestException('Ya existe un partido con este nombre en el tenant.');
+    }
 
-      const existingParties = await this.findOrParty([
-        { tenant: tenantObjectId, user: userObjectId, name: createPartyDto.name },
-      ]);
+    const logo = createPartyDto.logo
+      ? (await this.cloudinaryService.uploadImage(createPartyDto.logo)).secure_url
+      : '';
 
-      if (existingParties.length) {
-        throw new BadRequestException('A party with this name already exists for this tenant.');
-      }
+    const createdParty = new this.partyModel({
+      ...createPartyDto,
+      tenant: new Types.ObjectId(tenantId),
+      user: new Types.ObjectId(userId),
+      logo,
+    });
 
-      let logo = '';
-      if (createPartyDto.logo) {
-        const result = await this.cloudinaryService.uploadImage(createPartyDto.logo);
-        logo = result.secure_url;
-      }
+    return await createdParty.save();
+  }
 
-      const createdParty = new this.partyModel({
-        ...createPartyDto,
-        tenant: tenantObjectId,
-        user: userObjectId,
-        logo,
+  /**
+   * Obtiene un partido por su ID.
+   * @param id ID del partido.
+   * @param userId ID del usuario.
+   * @param tenantId ID del tenant.
+   * @returns Partido encontrado.
+   */
+  async findOne(id: string, userId: string, tenantId: string): Promise<Party> {
+    if (!isValidObjectId(id) || !isValidObjectId(userId) || !isValidObjectId(tenantId)) {
+      throw new BadRequestException('IDs inválidos proporcionados.');
+    }
+
+    await this.validateUserMembership(userId, tenantId);
+
+    const party = await this.partyModel.findOne({
+      _id: id,
+      tenant: new Types.ObjectId(tenantId),
+      user: new Types.ObjectId(userId),
+    }).exec();
+
+    if (!party) {
+      throw new NotFoundException(`No se encontró el partido con ID ${id} para este tenant.`);
+    }
+
+    return party;
+  }
+
+  /**
+   * Actualiza un partido existente.
+   * @param id ID del partido.
+   * @param userId ID del usuario.
+   * @param tenantId ID del tenant.
+   * @param updatePartyDto Datos del partido a actualizar.
+   * @returns Partido actualizado.
+   */
+  async patchParty(id: string, userId: string, tenantId: string, updatePartyDto: UpdatePartyDto): Promise<Party> {
+    if (!isValidObjectId(id) || !isValidObjectId(userId) || !isValidObjectId(tenantId)) {
+      throw new BadRequestException('IDs inválidos proporcionados.');
+    }
+
+    await this.validateUserMembership(userId, tenantId);
+
+    if (updatePartyDto.name) {
+      const existingParty = await this.partyModel.findOne({
+        tenant: new Types.ObjectId(tenantId),
+        user: new Types.ObjectId(userId),
+        name: updatePartyDto.name,
+        _id: { $ne: id },
       });
 
-      return await createdParty.save();
-    } catch (error) {
-      if (error.code === 11000) {
-        throw new BadRequestException('A party with this name already exists for this tenant.');
+      if (existingParty) {
+        throw new BadRequestException('Ya existe un partido con este nombre en el tenant.');
       }
-      throw error;
     }
+
+    const logo = updatePartyDto.logo
+      ? (await this.cloudinaryService.uploadImage(updatePartyDto.logo)).secure_url
+      : '';
+
+    const updatedParty = await this.partyModel.findOneAndUpdate(
+      { _id: id, tenant: new Types.ObjectId(tenantId), user: new Types.ObjectId(userId) },
+      { ...updatePartyDto, ...(logo && { logo }) },
+      { new: true },
+    ).exec();
+
+    if (!updatedParty) {
+      throw new NotFoundException(`No se encontró el partido con ID ${id} para este tenant.`);
+    }
+
+    return updatedParty;
   }
 
-  async findOne(id: string, userId: string, tenantId: string): Promise<Party> {
-    try {
-
-      if (!isValidObjectId(userId)) {
-        throw new BadRequestException(`The value ${userId} is not a valid ObjectId.`);
-      }
-
-      if (!isValidObjectId(tenantId)) {
-        throw new BadRequestException(`The value ${tenantId} is not a valid ObjectId.`);
-      }
-
-      const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
-      if (!isMember) {
-        throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
-      }
-
-      const userObjectId = new Types.ObjectId(userId);
-      const tenantObjectId = new Types.ObjectId(tenantId);
-
-      const party = await this.partyModel.findOne({ _id: id, tenant: tenantObjectId, user: userObjectId }).exec();
-      if (!party) {
-        throw new NotFoundException(`Party with ID ${id} not found for tenant ${tenantId}`);
-      }
-      return party;
-    } catch (error) {
-      throw new BadRequestException(`Failed to retrieve party with ID ${id}.`);
-    }
-  }
-
-  async patchParty(id: string, userId: string, tenantId: string, updatePartyDto: UpdatePartyDto): Promise<Party> {
-    try {
-
-
-      if (!isValidObjectId(id)) {
-        throw new BadRequestException(`The value ${id} is not a valid ObjectId.`);
-      }
-
-      if (!isValidObjectId(userId)) {
-        throw new BadRequestException(`The value ${userId} is not a valid ObjectId.`);
-      }
-
-      if (!isValidObjectId(tenantId)) {
-        throw new BadRequestException(`The value ${tenantId} is not a valid ObjectId.`);
-      }
-
-      const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
-      if (!isMember) {
-        throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
-      }
-
-      const userObjectId = new Types.ObjectId(userId);
-      const tenantObjectId = new Types.ObjectId(tenantId);
-
-
-      if (updatePartyDto.name) {
-        const existingParty = await this.partyModel.findOne({
-          tenant: tenantObjectId,
-          user: userObjectId,
-          name: updatePartyDto.name,
-          _id: { $ne: id },
-        });
-        if (existingParty) {
-          throw new BadRequestException('A party with this name already exists for this tenant.');
-        }
-      }
-
-      let logo = '';
-      if (updatePartyDto.logo) {
-        const result = await this.cloudinaryService.uploadImage(updatePartyDto.logo);
-        logo = result.secure_url;
-      }
-
-      const updatedParty = await this.partyModel.findOneAndUpdate(
-        { _id: id, tenant: tenantObjectId, user: userObjectId },
-        {
-          ...updatePartyDto,
-          ...(logo && { logo }),
-        },
-        { new: true },
-      ).exec();
-
-      if (!updatedParty) {
-        throw new NotFoundException(`Party with ID ${id} not found for tenant ${tenantId}`);
-      }
-      return updatedParty;
-    } catch (error) {
-      throw new BadRequestException(`Failed to update party with ID ${id}.`);
-    }
-  }
-
+  /**
+   * Elimina un partido por su ID.
+   * @param id ID del partido.
+   * @param userId ID del usuario.
+   * @param tenantId ID del tenant.
+   * @returns Partido eliminado.
+   */
   async removeParty(id: string, userId: string, tenantId: string): Promise<Party> {
-    try {
-      if (!isValidObjectId(userId)) {
-        throw new BadRequestException(`The value ${userId} is not a valid ObjectId.`);
-      }
-
-      if (!isValidObjectId(tenantId)) {
-        throw new BadRequestException(`The value ${tenantId} is not a valid ObjectId.`);
-      }
-
-      const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
-      if (!isMember) {
-        throw new UnauthorizedException('No tienes permiso para ver los partidos de este tenant.');
-      }
-
-      const userObjectId = new Types.ObjectId(userId);
-      const tenantObjectId = new Types.ObjectId(tenantId);
-
-      const deletedParty = await this.partyModel.findOneAndDelete({ _id: id, tenant: tenantObjectId, user: userObjectId }).exec();
-      if (!deletedParty) {
-        throw new NotFoundException(`Party with ID ${id} not found for tenant ${tenantId}`);
-      }
-      return deletedParty;
-    } catch (error) {
-      throw new BadRequestException(`Failed to delete party with ID ${id}.`);
+    if (!isValidObjectId(id) || !isValidObjectId(userId) || !isValidObjectId(tenantId)) {
+      throw new BadRequestException('IDs inválidos proporcionados.');
     }
+
+    await this.validateUserMembership(userId, tenantId);
+
+    const deletedParty = await this.partyModel.findOneAndDelete({
+      _id: id,
+      tenant: new Types.ObjectId(tenantId),
+      user: new Types.ObjectId(userId),
+    }).exec();
+
+    if (!deletedParty) {
+      throw new NotFoundException(`No se encontró el partido con ID ${id} para este tenant.`);
+    }
+
+    return deletedParty;
   }
 }

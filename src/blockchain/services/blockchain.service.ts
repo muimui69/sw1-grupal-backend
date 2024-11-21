@@ -9,42 +9,62 @@ export class BlockchainService {
     private readonly hardhatMicroserviceUrl: string;
 
     constructor(
-        private configService: ConfigService,
-        private httpService: HttpService
+        private readonly configService: ConfigService,
+        private readonly httpService: HttpService,
     ) {
-        this.hardhatMicroserviceUrl = this.configService.get<string>('hardhat_microservice_url') || 'http://localhost:6969';
+        // Obtener la URL del microservicio Hardhat desde las variables de configuración
+        this.hardhatMicroserviceUrl =
+            this.configService.get<string>('hardhat_microservice_url');
     }
 
-    async deployTenantContract(): Promise<string> {
+    /**
+     * Despliega un contrato de Tenant a través del microservicio Hardhat.
+     * @returns La dirección del contrato de Tenant desplegado.
+     * @throws BadRequestException si ocurre un error durante el despliegue.
+     */
+    public async deployTenantContract(): Promise<string> {
         try {
+            // Enviar una solicitud POST al microservicio para desplegar el contrato de Tenant
             const response: AxiosResponse<any> = await firstValueFrom(
-                this.httpService.post(`${this.hardhatMicroserviceUrl}/deploy-tenant-contract`)
+                this.httpService.post(`${this.hardhatMicroserviceUrl}/deploy-tenant-contract`),
             );
 
             const { contractTenant } = response.data;
+
+            // Validar si se obtuvo una dirección válida
             if (!contractTenant) {
                 throw new Error('No se pudo obtener la dirección del contrato de Tenant');
             }
 
             return contractTenant;
         } catch (error) {
+            // Manejo de errores con descripción clara en español
             throw new BadRequestException(`Error al desplegar el contrato de Tenant: ${error.message}`);
         }
     }
 
-    async deployElectionContract(): Promise<string> {
+    /**
+     * Despliega un contrato de Election a través del microservicio Hardhat.
+     * @returns La dirección del contrato de Election desplegado.
+     * @throws BadRequestException si ocurre un error durante el despliegue.
+     */
+    public async deployElectionContract(): Promise<string> {
         try {
+            // Enviar una solicitud POST al microservicio para desplegar el contrato de Election
             const response: AxiosResponse<any> = await firstValueFrom(
-                this.httpService.post(`${this.hardhatMicroserviceUrl}/deploy-election-contract`)
+                this.httpService.post(`${this.hardhatMicroserviceUrl}/deploy-election-contract`),
             );
 
             const { contractElection } = response.data;
+
+            // Validar si se obtuvo una dirección válida
             if (!contractElection) {
                 throw new Error('No se pudo obtener la dirección del contrato de Election');
             }
 
             return contractElection;
         } catch (error) {
+            // Manejo de errores con descripción clara en español
             throw new BadRequestException(`Error al desplegar el contrato de Election: ${error.message}`);
         }
     }

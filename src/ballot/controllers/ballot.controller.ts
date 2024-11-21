@@ -1,34 +1,41 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Param, HttpStatus, UseGuards, Req } from '@nestjs/common';
 import { BallotService } from '../service/ballot.service';
-import { CreateBallotDto } from '../dto/create-ballot.dto';
-import { UpdateBallotDto } from '../dto/update-ballot.dto';
+import { TokenAuthGuard } from 'src/auth/guard';
+import { TenantIdGuard } from 'src/tenant/guard';
+import { Request } from 'express';
 
+/**
+ * Controlador para manejar las operaciones relacionadas con las boletas electorales.
+ */
 @Controller('ballot')
 export class BallotController {
   constructor(private readonly ballotService: BallotService) { }
 
-  @Post()
-  create(@Body() createBallotDto: CreateBallotDto) {
-    return this.ballotService.create(createBallotDto);
-  }
+  /**
+   * Genera una boleta electoral basada en el `memberTenantId` proporcionado.
+   *
+   * @param req Request con el ID del usuario y tenant en los parámetros.
+   * @param memberTenantId ID del MemberTenant relacionado con la elección.
+   * @returns Boleta electoral generada exitosamente.
+   */
+  @Get('generate/:memberTenantId')
+  @UseGuards(TokenAuthGuard, TenantIdGuard)
+  async generateBallot(
+    @Req() req: Request,
+    @Param('memberTenantId') memberTenantId: string
+  ) {
+    const statusCode = HttpStatus.OK;
+    const userId = req.userId;
+    const tenantId = req.tenantId;
 
-  @Get()
-  findAll() {
-    return this.ballotService.findAll();
-  }
+    const ballot = await this.ballotService.generateBallot(memberTenantId, userId, tenantId);
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.ballotService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateBallotDto: UpdateBallotDto) {
-    return this.ballotService.update(+id, updateBallotDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.ballotService.remove(+id);
+    return {
+      statusCode,
+      message: 'Boleta electoral generada exitosamente',
+      data: {
+        ballot,
+      }
+    };
   }
 }

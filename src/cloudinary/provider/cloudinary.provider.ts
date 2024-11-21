@@ -2,6 +2,9 @@ import { v2 as cloudinary } from 'cloudinary';
 import { ConfigService } from '@nestjs/config';
 import { Provider } from '@nestjs/common';
 
+/**
+ * Proveedor para configurar e inicializar Cloudinary.
+ */
 export const CloudinaryProvider: Provider = {
     provide: 'Cloudinary',
     inject: [ConfigService],

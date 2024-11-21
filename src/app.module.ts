@@ -7,7 +7,6 @@ import { AuthModule } from './auth/auth.module';
 import { FileSystemStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
 import { TenantModule } from './tenant/tenant.module';
 import { CommonModule } from './common/common.module';
-import { CandidateModule } from './candidate/candidate.module';
 import { PartyModule } from './party/party.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { BallotModule } from './ballot/ballot.module';
@@ -38,7 +37,6 @@ import { BlockchainModule } from './blockchain/blockchain.module';
     AuthModule,
     TenantModule,
     CommonModule,
-    CandidateModule,
     PartyModule,
     CloudinaryModule,
     BallotModule,
