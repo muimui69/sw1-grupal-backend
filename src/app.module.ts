@@ -12,6 +12,10 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { BallotModule } from './ballot/ballot.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
 import { PinataModule } from './pinata/pinata.module';
+import { BackupModule } from './backup/backup.module';
+import { LogsService } from './common/services/logs.service';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { LogsInterceptor } from './common/interceptors/logs.Interceptor';
 
 @Module({
   imports: [
@@ -43,7 +47,14 @@ import { PinataModule } from './pinata/pinata.module';
     BallotModule,
     BlockchainModule,
     PinataModule,
+    BackupModule,
   ],
-  providers: [],
+  providers: [
+    LogsService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LogsInterceptor,
+    },
+  ],
 })
 export class AppModule { }
