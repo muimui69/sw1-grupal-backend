@@ -1,22 +1,26 @@
+# Usamos la versión específica de Node.js
 FROM node:22.11.0
 
-# Establece el directorio de trabajo dentro del contenedor
+# Instalamos pnpm globalmente
+RUN npm install -g pnpm
+
+# Definimos el directorio de trabajo en el contenedor
 WORKDIR /app
 
-# Copia el package.json y el package-lock.json para instalar las dependencias
-COPY package*.json ./
+# Copiamos los archivos esenciales para instalar dependencias
+COPY pnpm-lock.yaml package.json ./
 
-# Instala las dependencias de producción
-RUN npm install --omit=dev
+# Instalamos dependencias de producción
+RUN pnpm install --prod
 
-# Copia el resto de los archivos del proyecto al contenedor
+# Copiamos el resto de los archivos al contenedor
 COPY . .
 
-# Construye la aplicación NestJS
-RUN npm run build
+# Construimos la aplicación
+RUN pnpm build
 
-# Expone el puerto que usa la aplicación
+# Exponemos el puerto en el que corre el backend
 EXPOSE 3000
 
-# Comando para ejecutar la aplicación
+# Comando de inicio del contenedor
 CMD ["node", "dist/main"]

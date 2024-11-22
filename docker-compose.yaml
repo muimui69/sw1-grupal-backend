@@ -7,9 +7,31 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - ./mongo-data:/data/db   
+      - mongo_data:/data/db
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: erick17
+      MONGO_INITDB_ROOT_PASSWORD: admin
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nestjs_backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    environment:
+      MONGODB_URI: mongodb://root:admin@db:27017/voting-security?authSource=admin
+      NFT_STORAGE_API_TOKEN: your_api_token_here
+    volumes:
+      - ./dist:/app/dist
+      - ./backups:/app/backups
+    networks:
+      - app_network
+
 volumes:
   mongo_data:
+networks:
+  app_network:
