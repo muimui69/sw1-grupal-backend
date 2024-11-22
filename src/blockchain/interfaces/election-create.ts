@@ -12,6 +12,7 @@ export interface CandidateWithId {
     name: string;
     description: string;
     imgHash: string;
+    photo?: string;
     voteCount: number;
     email: string;
     partyId: string;

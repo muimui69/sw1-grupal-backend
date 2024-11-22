@@ -13,5 +13,7 @@ export const envConfig = () => ({
   cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET,
   blockchain_url: process.env.BLOCKCHAIN_URL,
   wallet_private_key: process.env.WALLET_PRIVATE_KEY,
-  hardhat_microservice_url: process.env.HARDHAT_MICROSERVICE_URL
+  hardhat_microservice_url: process.env.HARDHAT_MICROSERVICE_URL,
+  pinata_api_key: process.env.PINATA_API_KEY,
+  pinata_api_secret: process.env.PINATA_API_SECRET,
 })

@@ -2,9 +2,9 @@ import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model, Types } from 'mongoose';
 import { Party } from 'src/party/entity/party.entity';
-import { Candidate, CandidateWithId } from 'src/blockchain/interfaces/election-create';
+import { CandidateWithId } from 'src/blockchain/interfaces/election-create';
 import { TenantService } from 'src/tenant/services/tenant.service';
-import { ElectionContractService } from 'src/blockchain/services';
+import { CandidateService } from 'src/blockchain/services/candidate.service';
 
 /**
  * Servicio para generar boletas electorales, combinando candidatos del blockchain
@@ -14,7 +14,7 @@ import { ElectionContractService } from 'src/blockchain/services';
 export class BallotService {
   constructor(
     private readonly tenantService: TenantService,
-    private readonly electionContractService: ElectionContractService,
+    private readonly candidateService: CandidateService,
     @InjectModel(Party.name) private readonly partyModel: Model<Party>,
   ) { }
 
@@ -89,7 +89,7 @@ export class BallotService {
    * @returns Lista de candidatos.
    */
   private async getCandidates(memberTenantId: string): Promise<CandidateWithId[]> {
-    return await this.electionContractService.getAllCandidates(memberTenantId);
+    return await this.candidateService.getAllCandidates(memberTenantId);
   }
 
   /**

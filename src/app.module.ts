@@ -11,7 +11,7 @@ import { PartyModule } from './party/party.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { BallotModule } from './ballot/ballot.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
-import { HeliaModule } from './helia/helia.module';
+import { PinataModule } from './pinata/pinata.module';
 
 @Module({
   imports: [
@@ -42,7 +42,7 @@ import { HeliaModule } from './helia/helia.module';
     CloudinaryModule,
     BallotModule,
     BlockchainModule,
-    HeliaModule
+    PinataModule,
   ],
   providers: [],
 })
