@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model, Types } from 'mongoose';
 import { Party } from 'src/party/entity/party.entity';
-import { Candidate } from 'src/blockchain/interfaces/election-create';
+import { Candidate, CandidateWithId } from 'src/blockchain/interfaces/election-create';
 import { TenantService } from 'src/tenant/services/tenant.service';
 import { ElectionContractService } from 'src/blockchain/services';
 
@@ -88,7 +88,7 @@ export class BallotService {
    * @param memberTenantId ID del MemberTenant asociado al contrato.
    * @returns Lista de candidatos.
    */
-  private async getCandidates(memberTenantId: string): Promise<Candidate[]> {
+  private async getCandidates(memberTenantId: string): Promise<CandidateWithId[]> {
     return await this.electionContractService.getAllCandidates(memberTenantId);
   }
 
@@ -111,7 +111,7 @@ export class BallotService {
    * @param parties Lista de partidos del tenant.
    * @returns Boleta combinada.
    */
-  private combineCandidatesAndParties(candidates: Candidate[], parties: Party[]): any[] {
+  private combineCandidatesAndParties(candidates: CandidateWithId[], parties: Party[]): any[] {
     return candidates.map((candidate, index) => {
       const party = parties.find(p => p._id.toString() === candidate.partyId);
 
@@ -121,6 +121,7 @@ export class BallotService {
         description: candidate.description,
         imgHash: candidate.imgHash,
         email: candidate.email,
+        isActive: candidate.isActive,
         party: party
           ? {
             partyId: party._id,
