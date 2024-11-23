@@ -1,11 +1,12 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { exec } from 'child_process';
-import * as path from 'path';
+import { join } from 'path';
 
 @Injectable()
 export class BackupService {
     private readonly logger = new Logger(BackupService.name);
-    private readonly backupPath = path.join(__dirname, '..', 'backups'); // Ruta donde guardarás los backups
+    private readonly backupDirectory = './backups';
+    private readonly backupPath = join(this.backupDirectory);
 
     constructor() {
         // Crea la carpeta de backups si no existe
@@ -19,7 +20,7 @@ export class BackupService {
      */
     async createBackup(): Promise<void> {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const backupDir = path.join(this.backupPath, `backup-${timestamp}`);
+        const backupDir = join(this.backupPath, `backup-${timestamp}`);
         const mongoUri = 'mongodb://localhost:27017/voting-security';
 
         const command = `mongodump --uri="${mongoUri}" --out="${backupDir}"`;

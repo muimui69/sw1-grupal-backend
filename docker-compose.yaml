@@ -1,4 +1,5 @@
 version: '3.8'
+
 services:
   db:
     image: mongo:latest
@@ -24,10 +25,11 @@ services:
       - db
     environment:
       MONGODB_URI: mongodb://root:admin@db:27017/voting-security?authSource=admin
-      NFT_STORAGE_API_TOKEN: your_api_token_here
+      # NFT_STORAGE_API_TOKEN: your_api_token_here
+      NODE_ENV: production
     volumes:
-      - ./dist:/app/dist
       - ./backups:/app/backups
+      - ./logs:/app/logs
     networks:
       - app_network
 
