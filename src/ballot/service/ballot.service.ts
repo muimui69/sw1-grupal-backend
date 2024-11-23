@@ -5,6 +5,7 @@ import { Party } from 'src/party/entity/party.entity';
 import { CandidateWithId } from 'src/blockchain/interfaces/election-create';
 import { TenantService } from 'src/tenant/services/tenant.service';
 import { CandidateService } from 'src/blockchain/services/candidate.service';
+import { PinataService } from 'src/pinata/services/pinata.service';
 
 /**
  * Servicio para generar boletas electorales, combinando candidatos del blockchain
@@ -15,6 +16,7 @@ export class BallotService {
   constructor(
     private readonly tenantService: TenantService,
     private readonly candidateService: CandidateService,
+    private pinataService: PinataService,
     @InjectModel(Party.name) private readonly partyModel: Model<Party>,
   ) { }
 
@@ -31,7 +33,7 @@ export class BallotService {
     memberTenantId: string,
     userId: string,
     tenantId: string
-  ): Promise<any> {
+  ): Promise<CandidateWithId[]> {
     try {
       this.validateObjectIds(memberTenantId, userId, tenantId);
 
@@ -43,7 +45,7 @@ export class BallotService {
       const parties = await this.getParties(tenantId, userId);
 
       // Combinar datos para la boleta
-      const ballot = this.combineCandidatesAndParties(candidates, parties);
+      const ballot = await this.combineCandidatesAndParties(candidates, parties);
 
       return ballot;
     } catch (error) {
@@ -111,26 +113,32 @@ export class BallotService {
    * @param parties Lista de partidos del tenant.
    * @returns Boleta combinada.
    */
-  private combineCandidatesAndParties(candidates: CandidateWithId[], parties: Party[]): any[] {
-    return candidates.map((candidate, index) => {
-      const party = parties.find(p => p._id.toString() === candidate.partyId);
+  private async combineCandidatesAndParties(candidates: CandidateWithId[], parties: Party[]): Promise<any[]> {
+    return await Promise.all(
+      candidates.map(async (candidate, index) => {
+        const party = parties.find(p => p._id.toString() === candidate.partyId);
 
-      return {
-        candidateId: index,
-        name: candidate.name,
-        description: candidate.description,
-        imgHash: candidate.imgHash,
-        email: candidate.email,
-        isActive: candidate.isActive,
-        party: party
-          ? {
-            partyId: party._id,
-            name: party.name,
-            abbreviation: party.abbreviation,
-            logo: party.logo,
-          }
-          : null,
-      };
-    });
+        const photoUrl = await this.pinataService.getFileUrl(candidate.imgHash);
+
+        return {
+          candidateId: index,
+          name: candidate.name,
+          description: candidate.description,
+          imgHash: candidate.imgHash,
+          email: candidate.email,
+          isActive: candidate.isActive,
+          photo: photoUrl,
+          party: party
+            ? {
+              partyId: party._id,
+              name: party.name,
+              abbreviation: party.abbreviation,
+              logo: party.logo,
+            }
+            : null,
+        };
+      })
+    );
   }
+
 }

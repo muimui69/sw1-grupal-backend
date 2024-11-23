@@ -7,6 +7,7 @@ import { BlockchainModule } from 'src/blockchain/blockchain.module';
 import { UserModule } from 'src/user/user.module';
 import { TenantModule } from 'src/tenant/tenant.module';
 import { AuthModule } from 'src/auth/auth.module';
+import { PinataModule } from 'src/pinata/pinata.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { AuthModule } from 'src/auth/auth.module';
     AuthModule,
     TenantModule,
     BlockchainModule,
+    PinataModule,
   ],
   controllers: [BallotController],
   providers: [BallotService],
