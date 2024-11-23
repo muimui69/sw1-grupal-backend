@@ -15,4 +15,7 @@ export const envSchema = Joi.object({
   HARDHAT_MICROSERVICE_URL: Joi.string().required(),
   PINATA_API_KEY: Joi.string().required(),
   PINATA_API_SECRET: Joi.string().required(),
+  AWS_ACCESS_KEY_ID: Joi.string().required(),
+  AWS_SECRET_ACCESS_KEY: Joi.string().required(),
+  AWS_REGION: Joi.string().required(),
 })

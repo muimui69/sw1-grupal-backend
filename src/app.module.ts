@@ -16,6 +16,7 @@ import { BackupModule } from './backup/backup.module';
 import { LogsService } from './common/services/logs.service';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { LogsInterceptor } from './common/interceptors/logs.Interceptor';
+import { AwsModule } from './aws/aws.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { LogsInterceptor } from './common/interceptors/logs.Interceptor';
     BlockchainModule,
     PinataModule,
     BackupModule,
+    AwsModule,
   ],
   providers: [
     LogsService,
