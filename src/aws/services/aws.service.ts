@@ -1,27 +1,32 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Rekognition, Textract } from 'aws-sdk';
+import { TextractClient, DetectDocumentTextCommand } from '@aws-sdk/client-textract';
+import { RekognitionClient, CompareFacesCommand } from '@aws-sdk/client-rekognition';
 
 @Injectable()
 
 @Injectable()
 export class AwsService {
-    private rekognition: Rekognition;
-    private textract: Textract;
+    private rekognitionClient: RekognitionClient;
+    private textractClient: TextractClient;
 
     constructor(
         private readonly configService: ConfigService,
     ) {
-        this.rekognition = new Rekognition({
+        this.rekognitionClient = new RekognitionClient({
             region: this.configService.get<string>('aws_region'),
-            accessKeyId: this.configService.get<string>('aws_access_key_id'),
-            secretAccessKey: this.configService.get<string>('aws_secret_access_key'),
+            credentials: {
+                accessKeyId: this.configService.get<string>('aws_access_key_id'),
+                secretAccessKey: this.configService.get<string>('aws_secret_access_key'),
+            }
         });
 
-        this.textract = new Textract({
+        this.textractClient = new TextractClient({
             region: this.configService.get<string>('aws_region'),
-            accessKeyId: this.configService.get<string>('aws_access_key_id'),
-            secretAccessKey: this.configService.get<string>('aws_secret_access_key'),
+            credentials: {
+                accessKeyId: this.configService.get<string>('aws_access_key_id'),
+                secretAccessKey: this.configService.get<string>('aws_secret_access_key'),
+            }
         });
     }
 
@@ -31,13 +36,12 @@ export class AwsService {
      */
     async extractTextFromDocument(documentBuffer: Buffer): Promise<string[]> {
         try {
-            const params = {
+            const command = new DetectDocumentTextCommand({
                 Document: {
-                    Bytes: documentBuffer,
-                },
-            };
-
-            const result = await this.textract.detectDocumentText(params).promise();
+                    Bytes: documentBuffer
+                }
+            });
+            const result = await this.textractClient.send(command);
             return result.Blocks.filter(block => block.BlockType === 'LINE').map(block => block.Text || '');
         } catch (error) {
             throw new InternalServerErrorException('Error al extraer texto del documento');
@@ -51,13 +55,12 @@ export class AwsService {
      */
     async compareFaces(sourceImageBuffer: Buffer, targetImageBuffer: Buffer): Promise<boolean> {
         try {
-            const params = {
+            const command = new CompareFacesCommand({
                 SourceImage: { Bytes: sourceImageBuffer },
                 TargetImage: { Bytes: targetImageBuffer },
                 SimilarityThreshold: 80,
-            };
-
-            const result = await this.rekognition.compareFaces(params).promise();
+            });
+            const result = await this.rekognitionClient.send(command);
             return result.FaceMatches && result.FaceMatches.length > 0;
         } catch (error) {
             throw new InternalServerErrorException('Error al comparar las fotos');
