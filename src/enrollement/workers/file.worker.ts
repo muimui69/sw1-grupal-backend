@@ -39,6 +39,9 @@ async function processBatch(batch: any[], headers: string[]) {
 (async () => {
     try {
         const { batch, headers } = workerData;
+        if (!batch || !headers) {
+            throw new Error("Datos insuficientes para procesar");
+        }
         await processBatch(batch, headers);
         parentPort?.postMessage({ success: true, message: `Lote procesado con ${batch.length} filas.` });
     } catch (error) {

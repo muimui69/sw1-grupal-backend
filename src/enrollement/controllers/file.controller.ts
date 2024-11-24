@@ -59,21 +59,21 @@ export class FileController {
     @UseInterceptors(FileInterceptor('file'))
     async uploadCSV(
         @UploadedFile() file: Multer.File,
-        @Body('expectedHeaders') expectedHeaders: string[],
+        @Body('expectedHeaders') expectedHeaders: string, // Recibe como string
     ) {
         if (!file) {
             throw new HttpException('Archivo no proporcionado', HttpStatus.BAD_REQUEST);
         }
 
-        if (!expectedHeaders || expectedHeaders.length === 0) {
-            throw new HttpException(
-                'No se proporcionaron las columnas esperadas para validar el archivo',
-                HttpStatus.BAD_REQUEST,
-            );
+        let headersArray: string[];
+        try {
+            headersArray = JSON.parse(expectedHeaders);
+        } catch (error) {
+            throw new BadRequestException('expectedHeaders debe ser un JSON válido.');
         }
 
         try {
-            await this.fileService.processCSV(file.path, expectedHeaders);
+            await this.fileService.processCSV(file.buffer, headersArray);
             return { message: 'Archivo CSV procesado con éxito' };
         } catch (error) {
             console.error('Error al procesar el archivo:', error.message);

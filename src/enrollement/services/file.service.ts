@@ -67,7 +67,7 @@ export class FileService {
      * @param expectedHeaders - Columnas esperadas desde el frontend.
      */
     async processCSV(fileBuffer: Buffer, expectedHeaders: string[]): Promise<void> {
-        const batch: any[] = [];
+        let batch: any[] = [];
         const batchSize = 1000;
 
         return new Promise((resolve, reject) => {
@@ -82,17 +82,21 @@ export class FileService {
                     }
                 })
                 .on('data', (row) => {
-                    batch.push(row);
+                    const rowData = this.extractRowDataArray(row, expectedHeaders);
+                    batch.push(rowData); // Agrega la fila al lote actual
 
                     if (batch.length >= batchSize) {
-                        this.processBatch(batch, expectedHeaders)
-                            .then(() => batch.length = 0)
-                            .catch(err => reject(err));
+                        const currentBatch = [...batch]; // Crea una copia del lote
+                        batch = []; // Limpia el lote antes de procesarlo
+                        this.processBatch(currentBatch, expectedHeaders)
+                            .catch((err) => reject(err));
                     }
                 })
                 .on('end', async () => {
                     if (batch.length > 0) {
-                        await this.processBatch(batch, expectedHeaders);
+                        const finalBatch = [...batch];
+                        batch = []; // Limpia el lote restante
+                        await this.processBatch(finalBatch, expectedHeaders);
                     }
                     resolve();
                 })
@@ -146,6 +150,18 @@ export class FileService {
     }
 
     /**
+     * Extrae y asocia los datos de una fila del archivo CSV con los encabezados correspondientes.
+     * 
+     * @param row - Objeto que representa una fila del CSV, donde las claves son los encabezados y los valores son los datos de esa fila.
+     * @param headers - Array de cadenas que representan los encabezados esperados para la asociación con los datos de la fila.
+     * @returns Un objeto donde cada clave es un encabezado y su valor es el dato correspondiente de la fila.
+     *
+     */
+    private extractRowDataArray(row: any, headers: string[]): any[] {
+        return headers.map(header => row[header] || null); // Devuelve un arreglo con los valores en el orden de los encabezados
+    }
+
+    /**
      * Convierte una cadena en formato camelCase.
      * @param value - Cadena a convertir.
      * @returns La cadena convertida en camelCase.
@@ -169,8 +185,8 @@ export class FileService {
      */
     async processBatch(batch: any[], headers: string[]): Promise<void> {
         return new Promise((resolve, reject) => {
-            const workerPath = path.resolve(__dirname, '../workers/file.worker.js');
             const headersToCamelCase = headers.map(header => this.toCamelCase(header));
+            const workerPath = path.resolve(__dirname, '../workers/file.worker.js');
             const worker = new Worker(workerPath, {
                 workerData: {
                     batch,
