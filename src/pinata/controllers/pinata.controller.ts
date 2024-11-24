@@ -12,7 +12,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { PinataService } from '../services/pinata.service';
 import { Multer } from 'multer';
 
-@Controller('nftstorage')
+@Controller('pinata')
 export class PinataController {
   constructor(private readonly pinataService: PinataService) { }
 

@@ -5,67 +5,76 @@ import {
     UseInterceptors,
     HttpException,
     HttpStatus,
+    Body,
+    UploadedFiles,
+    BadRequestException,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage, Multer } from 'multer';
-import * as path from 'path';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { FileService } from '../services/file.service';
+import * as path from 'path';
+import { Multer } from 'multer';
 
-@Controller('files')
+@Controller('file')
 export class FileController {
     constructor(private readonly fileService: FileService) { }
 
-    // Fecha de nacimineto , fechaDeNacimineto, fecha_de_nacimineto
+    /**
+     * Endpoint para subir y procesar un archivo Excel.
+     * @param file - Archivo Excel proporcionado por el usuario.
+     * @param expectedHeaders - Columnas esperadas enviadas desde el frontend.
+     */
+    @Post('upload/excel')
+    @UseInterceptors(FileInterceptor('file'))
+    async uploadExcel(
+        @UploadedFile() file: Multer.File,
+        @Body('expectedHeaders') expectedHeaders: string, // Recibe como string
+    ) {
+        if (!file) {
+            throw new BadRequestException('No se ha proporcionado un archivo.');
+        }
 
-    // "dni","nombre","apellido","fecha_de_nacimineto","email","telefono","direccion","ciudad","provincia","pais","codigo_postal","fecha_de_alta","fecha_de_baja","estado"
+        // Convierte el string JSON en un array
+        let headersArray: string[];
+        try {
+            headersArray = JSON.parse(expectedHeaders);
+        } catch (error) {
+            throw new BadRequestException('expectedHeaders debe ser un JSON válido.');
+        }
 
+        // Llama al servicio para procesar el archivo
+        await this.fileService.processExcel(file.buffer, headersArray);
+
+        return {
+            message: 'Archivo procesado exitosamente.',
+        };
+    }
 
 
     /**
-     * Endpoint para subir y procesar un archivo Excel.
-     * @param file Archivo subido por el cliente.
+     * Endpoint para subir y procesar un archivo CSV.
+     * @param file - Archivo CSV proporcionado por el usuario.
+     * @param expectedHeaders - Columnas esperadas enviadas desde el frontend.
      */
-    @Post('upload/excel')
-    @UseInterceptors(
-        FileInterceptor('file', {
-            storage: diskStorage({
-                destination: './uploads', // Carpeta donde se guardarán temporalmente los archivos
-                filename: (req, file, callback) => {
-                    const fileExt = path.extname(file.originalname);
-                    const fileName = `${path.basename(
-                        file.originalname,
-                        fileExt,
-                    )}-${Date.now()}${fileExt}`;
-                    callback(null, fileName);
-                },
-            }),
-            fileFilter: (req, file, callback) => {
-                // Validar que el archivo sea un Excel
-                if (!file.originalname.match(/\.(xlsx)$/)) {
-                    return callback(
-                        new HttpException(
-                            'Solo se permiten archivos .xlsx',
-                            HttpStatus.BAD_REQUEST,
-                        ),
-                        false,
-                    );
-                }
-                callback(null, true);
-            },
-        }),
-    )
-    async uploadExcel(@UploadedFile() file: Multer.File) {
+    @Post('upload/csv')
+    @UseInterceptors(FileInterceptor('file'))
+    async uploadCSV(
+        @UploadedFile() file: Multer.File,
+        @Body('expectedHeaders') expectedHeaders: string[],
+    ) {
         if (!file) {
+            throw new HttpException('Archivo no proporcionado', HttpStatus.BAD_REQUEST);
+        }
+
+        if (!expectedHeaders || expectedHeaders.length === 0) {
             throw new HttpException(
-                'Archivo no proporcionado',
+                'No se proporcionaron las columnas esperadas para validar el archivo',
                 HttpStatus.BAD_REQUEST,
             );
         }
 
         try {
-            console.log(`Archivo recibido: ${file.path}`);
-            await this.fileService.processExcel(file.path);
-            return { message: 'Archivo Excel procesado con éxito' };
+            await this.fileService.processCSV(file.path, expectedHeaders);
+            return { message: 'Archivo CSV procesado con éxito' };
         } catch (error) {
             console.error('Error al procesar el archivo:', error.message);
             throw new HttpException(
@@ -76,56 +85,50 @@ export class FileController {
     }
 
     /**
-     * Endpoint para subir y procesar un archivo CSV.
-     * @param file Archivo subido por el cliente.
+     * Endpoint para subir y procesar múltiples archivos (Excel o CSV).
+     * @param files - Archivos subidos.
+     * @param expectedHeaders - Columnas esperadas enviadas desde el frontend.
      */
-    @Post('upload/csv')
-    @UseInterceptors(
-        FileInterceptor('file', {
-            storage: diskStorage({
-                destination: './uploads',
-                filename: (req, file, callback) => {
-                    const fileExt = path.extname(file.originalname);
-                    const fileName = `${path.basename(
-                        file.originalname,
-                        fileExt,
-                    )}-${Date.now()}${fileExt}`;
-                    callback(null, fileName);
-                },
-            }),
-            fileFilter: (req, file, callback) => {
-                // Validar que el archivo sea un CSV
-                if (!file.originalname.match(/\.(csv)$/)) {
-                    return callback(
-                        new HttpException(
-                            'Solo se permiten archivos .csv',
-                            HttpStatus.BAD_REQUEST,
-                        ),
-                        false,
-                    );
-                }
-                callback(null, true);
-            },
-        }),
-    )
-    async uploadCSV(@UploadedFile() file: Multer.File) {
-        if (!file) {
+    @Post('upload/multiple')
+    @UseInterceptors(FilesInterceptor('files'))
+    async uploadMultipleFiles(
+        @UploadedFiles() files: Multer.File[],
+        @Body('expectedHeaders') expectedHeaders: string[],
+    ) {
+        if (!files || files.length === 0) {
+            throw new HttpException('No se proporcionaron archivos', HttpStatus.BAD_REQUEST);
+        }
+
+        if (!expectedHeaders || expectedHeaders.length === 0) {
             throw new HttpException(
-                'Archivo no proporcionado',
+                'No se proporcionaron las columnas esperadas para validar los archivos',
                 HttpStatus.BAD_REQUEST,
             );
         }
 
-        try {
-            console.log(`Archivo recibido: ${file.path}`);
-            await this.fileService.processCSV(file.path);
-            return { message: 'Archivo CSV procesado con éxito' };
-        } catch (error) {
-            console.error('Error al procesar el archivo:', error.message);
+        const errors: string[] = [];
+        for (const file of files) {
+            try {
+                if (path.extname(file.originalname).toLowerCase() === '.csv') {
+                    await this.fileService.processCSV(file.path, expectedHeaders);
+                } else if (path.extname(file.originalname).toLowerCase() === '.xlsx') {
+                    await this.fileService.processExcel(file.path, expectedHeaders);
+                } else {
+                    errors.push(`Formato no soportado para el archivo: ${file.originalname}`);
+                }
+            } catch (error) {
+                console.error(`Error al procesar el archivo ${file.originalname}:`, error.message);
+                errors.push(`Error en el archivo ${file.originalname}: ${error.message}`);
+            }
+        }
+
+        if (errors.length > 0) {
             throw new HttpException(
-                `Error al procesar el archivo: ${error.message}`,
+                `Errores en algunos archivos: ${errors.join('; ')}`,
                 HttpStatus.INTERNAL_SERVER_ERROR,
             );
         }
+
+        return { message: 'Todos los archivos procesados con éxito' };
     }
 }

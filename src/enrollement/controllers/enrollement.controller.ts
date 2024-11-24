@@ -7,28 +7,28 @@ import { EnrollementService } from '../services/enrollement.service';
 export class EnrollementController {
   constructor(private readonly enrollementService: EnrollementService) { }
 
-  @Post()
-  create(@Body() createEnrollementDto: CreateEnrollementDto) {
-    return this.enrollementService.create(createEnrollementDto);
-  }
+  // @Post()
+  // create(@Body() createEnrollementDto: CreateEnrollementDto) {
+  //   return this.enrollementService.create(createEnrollementDto);
+  // }
 
-  @Get()
-  findAll() {
-    return this.enrollementService.findAll();
-  }
+  // @Get()
+  // findAll() {
+  //   return this.enrollementService.findAll();
+  // }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.enrollementService.findOne(+id);
-  }
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.enrollementService.findOne(+id);
+  // }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEnrollementDto: UpdateEnrollementDto) {
-    return this.enrollementService.update(+id, updateEnrollementDto);
-  }
+  // @Patch(':id')
+  // update(@Param('id') id: string, @Body() updateEnrollementDto: UpdateEnrollementDto) {
+  //   return this.enrollementService.update(+id, updateEnrollementDto);
+  // }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.enrollementService.remove(+id);
-  }
+  // @Delete(':id')
+  // remove(@Param('id') id: string) {
+  //   return this.enrollementService.remove(+id);
+  // }
 }

@@ -5,8 +5,7 @@ import { join } from 'path';
 @Injectable()
 export class BackupService {
     private readonly logger = new Logger(BackupService.name);
-    private readonly backupDirectory = './backups';
-    private readonly backupPath = join(this.backupDirectory);
+    private readonly backupPath = join('./backups');
 
     constructor() {
         // Crea la carpeta de backups si no existe
