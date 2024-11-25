@@ -4,8 +4,8 @@ import {
     UseGuards,
     Req,
     Get,
-    Param,
     BadRequestException,
+    HttpStatus,
 } from '@nestjs/common';
 import { TokenAuthGuard } from 'src/auth/guard';
 import { TenantIdGuard } from 'src/tenant/guard';
@@ -27,7 +27,13 @@ export class EnrollmentConfigurationController {
     @UseGuards(TokenAuthGuard, TenantIdGuard)
     async createEnrollmentConfig(@Req() req: Request) {
         const { userId, tenantId } = this.extractUserAndTenant(req);
-        return await this.enrollmentConfigurationService.createConfig(userId, tenantId);
+        const config = await this.enrollmentConfigurationService.createConfig(userId, tenantId);
+
+        return {
+            statusCode: HttpStatus.CREATED,
+            message: 'Configuración de empadronamiento creada con éxito.',
+            data: { config },
+        };
     }
 
     /**
@@ -39,23 +45,49 @@ export class EnrollmentConfigurationController {
     @UseGuards(TokenAuthGuard, TenantIdGuard)
     async startEnrollment(@Req() req: Request) {
         const { userId, tenantId } = this.extractUserAndTenant(req);
-        return await this.enrollmentConfigurationService.startEnrollment(userId, tenantId);
+        const config = await this.enrollmentConfigurationService.startEnrollment(userId, tenantId);
+
+        return {
+            statusCode: HttpStatus.OK,
+            message: 'El empadronamiento ha sido iniciado con éxito.',
+            data: { config },
+        };
     }
 
     /**
      * Obtiene la configuración de empadronamiento de un tenant.
      * @param req - Objeto de la solicitud.
-     * @param tenantId - ID del tenant.
      * @returns La configuración encontrada.
      */
-    @Get('get/:tenantId')
+    @Get()
     @UseGuards(TokenAuthGuard, TenantIdGuard)
-    async getConfig(@Req() req: Request, @Param('tenantId') tenantId: string) {
-        const { userId } = this.extractUserAndTenant(req);
-        if (!tenantId) {
-            throw new BadRequestException('El tenantId es requerido.');
-        }
-        return await this.enrollmentConfigurationService.getConfig(userId, tenantId);
+    async getConfig(@Req() req: Request) {
+        const { userId, tenantId } = this.extractUserAndTenant(req);
+        const config = await this.enrollmentConfigurationService.getConfig(userId, tenantId);
+
+        return {
+            statusCode: HttpStatus.OK,
+            message: 'Configuración de empadronamiento obtenida con éxito.',
+            data: { config },
+        };
+    }
+
+    /**
+     * Verifica si el empadronamiento está iniciado para un tenant.
+     * @param req - Objeto de la solicitud.
+     * @returns `true` si el empadronamiento está iniciado, `false` en caso contrario.
+     */
+    @Get('is-started')
+    @UseGuards(TokenAuthGuard, TenantIdGuard)
+    async getIsStarted(@Req() req: Request) {
+        const { userId, tenantId } = this.extractUserAndTenant(req);
+        const isStarted = await this.enrollmentConfigurationService.getIsStarted(userId, tenantId);
+
+        return {
+            statusCode: HttpStatus.OK,
+            message: 'Estado del empadronamiento obtenido con éxito.',
+            data: { isStarted },
+        };
     }
 
     /**

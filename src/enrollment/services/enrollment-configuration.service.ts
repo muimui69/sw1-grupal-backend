@@ -96,6 +96,28 @@ export class EnrollmentConfigurationService {
     }
 
     /**
+     * Verifica si el empadronamiento está iniciado para un Tenant y un Usuario.
+     * @param userId - ID del Usuario.
+     * @param tenantId - ID del Tenant.
+     * @returns `true` si el empadronamiento está iniciado, `false` en caso contrario.
+     */
+    async getIsStarted(userId: string, tenantId: string): Promise<boolean> {
+        this.validateObjectIds(userId, tenantId);
+        await this.validateUserMembership(userId, tenantId);
+
+        const userObjectId = new Types.ObjectId(userId);
+        const tenantObjectId = new Types.ObjectId(tenantId);
+
+        const config = await this.enrollmentConfigModel
+            .findOne({ user: userObjectId, tenant: tenantObjectId })
+            .exec();
+        if (!config) {
+            throw new BadRequestException('La configuración para este tenant no existe.');
+        }
+        return config.isStarted;
+    }
+
+    /**
      * Valida si el usuario es miembro del tenant.
      * @param userId - ID del Usuario.
      * @param tenantId - ID del Tenant.
