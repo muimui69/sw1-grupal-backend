@@ -6,7 +6,7 @@ import { promises as fs } from 'fs';
 import * as fastCsv from 'fast-csv';
 
 @Injectable()
-export class FileService {
+export class EnrollmentService {
     private readonly tempDir = path.join('./temp');
 
     constructor() {
@@ -17,8 +17,10 @@ export class FileService {
      * Procesa un archivo Excel en streaming.
      * @param fileBuffer - Buffer del archivo Excel.
      * @param expectedHeaders - Columnas esperadas desde el frontend.
+     * @param userId - ID del usuario.
+     * @param tenantId - ID del tenant.
      */
-    async processExcel(fileBuffer: Buffer, expectedHeaders: string[]): Promise<void> {
+    async processExcel(fileBuffer: Buffer, expectedHeaders: string[], userId: string, tenantId: string): Promise<void> {
         const tempFilePath = await this.saveTempFile(fileBuffer, 'xlsx');
 
         try {
@@ -44,7 +46,7 @@ export class FileService {
                         batch.push(rowData);
 
                         if (batch.length >= batchSize) {
-                            await this.processBatch(batch, expectedHeaders);
+                            await this.processBatch(batch, expectedHeaders, userId, tenantId);
                             batch.length = 0; // Limpia el lote después de procesarlo
                         }
                     }
@@ -52,7 +54,7 @@ export class FileService {
 
                 // Procesa cualquier fila restante
                 if (batch.length > 0) {
-                    await this.processBatch(batch, expectedHeaders);
+                    await this.processBatch(batch, expectedHeaders, userId, tenantId);
                 }
             }
         } finally {
@@ -65,8 +67,10 @@ export class FileService {
      * Procesa un archivo CSV en streaming.
      * @param fileBuffer - Buffer del archivo CSV.
      * @param expectedHeaders - Columnas esperadas desde el frontend.
+     * @param userId - ID del usuario.
+     * @param tenantId - ID del tenant.
      */
-    async processCSV(fileBuffer: Buffer, expectedHeaders: string[]): Promise<void> {
+    async processCSV(fileBuffer: Buffer, expectedHeaders: string[], userId: string, tenantId: string): Promise<void> {
         let batch: any[] = [];
         const batchSize = 1000;
 
@@ -88,7 +92,7 @@ export class FileService {
                     if (batch.length >= batchSize) {
                         const currentBatch = [...batch]; // Crea una copia del lote
                         batch = []; // Limpia el lote antes de procesarlo
-                        this.processBatch(currentBatch, expectedHeaders)
+                        this.processBatch(currentBatch, expectedHeaders, userId, tenantId)
                             .catch((err) => reject(err));
                     }
                 })
@@ -96,7 +100,7 @@ export class FileService {
                     if (batch.length > 0) {
                         const finalBatch = [...batch];
                         batch = []; // Limpia el lote restante
-                        await this.processBatch(finalBatch, expectedHeaders);
+                        await this.processBatch(finalBatch, expectedHeaders, userId, tenantId);
                     }
                     resolve();
                 })
@@ -182,15 +186,19 @@ export class FileService {
      * Procesa un lote de datos utilizando un worker thread.
      * @param batch - Lote de filas a procesar.
      * @param headers - Encabezados esperados.
+     * @param userId - ID del usuario.
+     * @param tenantId - ID del tenant.
      */
-    async processBatch(batch: any[], headers: string[]): Promise<void> {
+    async processBatch(batch: any[], headers: string[], userId: string, tenantId: string): Promise<void> {
         return new Promise((resolve, reject) => {
             const headersToCamelCase = headers.map(header => this.toCamelCase(header));
             const workerPath = path.resolve(__dirname, '../workers/file.worker.js');
             const worker = new Worker(workerPath, {
                 workerData: {
                     batch,
-                    headers: headersToCamelCase
+                    headers: headersToCamelCase,
+                    userId,
+                    tenantId,
                 }
             });
 

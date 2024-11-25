@@ -17,7 +17,7 @@ import { LogsService } from './common/services/logs.service';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { LogsInterceptor } from './common/interceptors/logs.Interceptor';
 import { AwsModule } from './aws/aws.module';
-import { EnrollementModule } from './enrollement/enrollement.module';
+import { EnrollmentModule } from './enrollment/enrollment.module';
 
 @Module({
   imports: [
@@ -51,7 +51,7 @@ import { EnrollementModule } from './enrollement/enrollement.module';
     PinataModule,
     BackupModule,
     AwsModule,
-    EnrollementModule,
+    EnrollmentModule,
   ],
   providers: [
     LogsService,
