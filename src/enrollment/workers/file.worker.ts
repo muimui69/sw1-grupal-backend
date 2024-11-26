@@ -3,7 +3,8 @@ import { connect, isValidObjectId, model, Schema, Types } from 'mongoose';
 
 // Conexión a MongoDB
 (async () => {
-    await connect('mongodb://localhost:27017/voting-security'); // Cambia la URI si es necesario
+    // await connect('mongodb://localhost:27017/voting-security'); // Cambia la URI si es necesario
+    await connect(process.env.DATABASE_URL!!); // Cambia la URI si es necesario
 })();
 
 // Define el esquema de `Enrollment`
