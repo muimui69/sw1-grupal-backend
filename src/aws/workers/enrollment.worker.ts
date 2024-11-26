@@ -1,5 +1,5 @@
 import { parentPort, workerData } from 'worker_threads';
-import { connect, model, Schema, Types } from 'mongoose';
+import { connect, isValidObjectId, model, Schema, Types } from 'mongoose';
 
 // Conexión a MongoDB
 (async () => {
@@ -21,7 +21,7 @@ const Enrollment = model('Enrollment', enrollmentSchema);
  * @param batch - Lote de filas a procesar.
  * @param tenantId - ID del Tenant al que pertenece el lote.
  */
-async function processBatch(batch: Record<string, string>[], tenantId: string) {
+async function processBatch(batch: Record<string, string>[], userId: string, tenantId: string) {
     console.log(`Procesando lote de ${batch.length} filas para Tenant ${tenantId}...`);
 
     const results = [];
@@ -30,6 +30,7 @@ async function processBatch(batch: Record<string, string>[], tenantId: string) {
             const value = row[field]?.trim();
             if (value) {
                 const enrollment = await Enrollment.findOne({
+                    user: userId,
                     tenant: tenantId,
                     [field]: value,
                 }).exec();
@@ -52,12 +53,16 @@ async function processBatch(batch: Record<string, string>[], tenantId: string) {
 // Lógica principal del worker
 (async () => {
     try {
-        const { batch, tenantId } = workerData;
+        const { batch, userId, tenantId } = workerData;
         if (!batch || !tenantId) {
             throw new Error('Datos insuficientes para procesar');
         }
 
-        const results = await processBatch(batch, tenantId);
+        if (!isValidObjectId(userId) || !isValidObjectId(tenantId)) {
+            throw new Error('ID de Usuario o Tenant inválido');
+        }
+
+        const results = await processBatch(batch, userId, tenantId);
         parentPort?.postMessage({ success: true, results });
     } catch (error) {
         console.error(`Error en el worker: ${error.message}`);

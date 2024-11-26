@@ -36,11 +36,12 @@ export class AwsController {
       throw new BadRequestException('Debes subir las fotos del anverso y reverso del documento');
     }
 
+    const userId = req.userId;
     const tenantId = req.tenantId;
     const [frontFile, backFile] = files;
 
     try {
-      const result = await this.awsService.processAndValidateDocument(frontFile.buffer, backFile.buffer, tenantId);
+      const result = await this.awsService.processAndValidateDocument(frontFile.buffer, backFile.buffer, userId, tenantId);
 
       return {
         statusCode: HttpStatus.OK,
@@ -60,16 +61,23 @@ export class AwsController {
   @Post('compare-face')
   @UseGuards(TokenAuthGuard, TenantIdGuard)
   @UseInterceptors(FilesInterceptor('files', 3)) // Aceptar hasta 3 archivos
-  async compareFace(@UploadedFiles() files: Multer.File[]) {
+  async compareFace(
+    @Req() req: Request,
+    @UploadedFiles() files: Multer.File[]
+  ) {
     if (!files || files.length !== 3) {
       throw new BadRequestException('Debes subir tres fotos: anverso, reverso del documento y tu selfie.');
     }
 
+    const userId = req.userId;
+    const tenantId = req.tenantId;
     const [frontFile, backFile, selfieFile] = files;
 
     try {
       // Llamar al servicio para comparar la selfie con las caras del documento
       const isFaceMatch = await this.awsService.compareFacesWithDocument(
+        userId,
+        tenantId,
         frontFile.buffer,
         backFile.buffer,
         selfieFile.buffer,

@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TextractClient, DetectDocumentTextCommand } from '@aws-sdk/client-textract';
 import { RekognitionClient, CompareFacesCommand } from '@aws-sdk/client-rekognition';
@@ -9,6 +9,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Enrollment } from 'src/enrollment/entities/enrollment.entity';
 import { CohereService } from '../../cohere/services/cohere.service';
 import { Worker } from 'worker_threads';
+import { TenantService } from 'src/tenant/services/tenant.service';
 
 @Injectable()
 export class AwsService {
@@ -19,6 +20,7 @@ export class AwsService {
     constructor(
         private readonly configService: ConfigService,
         private readonly cohereService: CohereService,
+        private readonly tenantService: TenantService,
         @InjectModel(Enrollment.name) private readonly enrollmentModel: Model<Enrollment>
     ) {
         this.rekognitionClient = new RekognitionClient({
@@ -47,8 +49,9 @@ export class AwsService {
      * @param tenantId - ID del tenant.
      * @returns Información validada del usuario.
      */
-    async processAndValidateDocument(frontBuffer: Buffer, backBuffer: Buffer, tenantId: string) {
-        // try {
+    async processAndValidateDocument(frontBuffer: Buffer, backBuffer: Buffer, userId: string, tenantId: string) {
+        await this.validateUserMembership(userId, tenantId);
+
         // 1. Extraer texto del anverso y reverso
         const frontText = await this.extractTextFromDocument(frontBuffer);
         const backText = await this.extractTextFromDocument(backBuffer);
@@ -57,17 +60,17 @@ export class AwsService {
         const combinedText = [...frontText, ...backText];
 
         // 3. Realizar el match dinámico con Cohere
-        const matchedFields = await this.matchFieldsWithEnrollment(combinedText, tenantId);
+        const matchedFields = await this.matchFieldsWithEnrollment(combinedText);
 
         // 4. Buscar el usuario en la base de datos
-        const matchedEnrollment = await this.findEnrollmentByMatchedFields(matchedFields, tenantId);
+        const matchedEnrollment = await this.findEnrollmentByMatchedFields(matchedFields, userId, tenantId);
 
         return { matchedFields, matchedEnrollment };
-        // } catch (error) {
-        // throw new InternalServerErrorException(`Error al procesar y validar el documento: ${error.message}`);
-        // }
     }
 
+    /**
+     * Inicializa el directorio temporal.
+     */
     private async initializeTempDir(): Promise<void> {
         try {
             await fs.mkdir(this.tempDir, { recursive: true });
@@ -76,24 +79,11 @@ export class AwsService {
         }
     }
 
-    async saveTempFile(fileBuffer: Buffer, fileNamePrefix: string, extension: string): Promise<string> {
-        const filePath = join(this.tempDir, `${fileNamePrefix}-${Date.now()}.${extension}`);
-        try {
-            await fs.writeFile(filePath, fileBuffer);
-            return filePath;
-        } catch (error) {
-            throw new InternalServerErrorException('Error al guardar el archivo temporal');
-        }
-    }
-
-    async deleteFromTempStorage(filePath: string): Promise<void> {
-        try {
-            await fs.unlink(filePath);
-        } catch (error) {
-            console.error('Error al eliminar archivo temporal:', error.message);
-        }
-    }
-
+    /**
+    * Extrae texto de un documento.
+    * @param documentBuffer - Buffer del documento.
+    * @returns Lista de líneas extraídas.
+    */
     async extractTextFromDocument(documentBuffer: Buffer): Promise<string[]> {
         try {
             const command = new DetectDocumentTextCommand({
@@ -106,27 +96,41 @@ export class AwsService {
         }
     }
 
+    /**
+    * Compara las caras del documento con una selfie.
+    * @param userId - ID del usuario.
+    * @param tenantId - ID del tenant.
+    * @param frontBuffer - Buffer del anverso del documento.
+    * @param backBuffer - Buffer del reverso del documento.
+    * @param selfieBuffer - Buffer de la selfie.
+    * @returns `true` si las caras coinciden; `false` de lo contrario.
+    */
     async compareFacesWithDocument(
+        userId: string,
+        tenantId: string,
         frontBuffer: Buffer,
         backBuffer: Buffer,
         selfieBuffer: Buffer,
     ): Promise<boolean> {
         try {
-            // Priorizar la comparación con el anverso
+            await this.validateUserMembership(userId, tenantId);
             const frontMatch = await this.compareFacesBuffer(frontBuffer, selfieBuffer);
-
-            // Si no hay coincidencia con el anverso, intentar con el reverso
             if (!frontMatch) {
                 const backMatch = await this.compareFacesBuffer(backBuffer, selfieBuffer);
-                return backMatch; // Resultado de la comparación con el reverso
+                return backMatch;
             }
-
-            return frontMatch; // Coincidencia con el anverso
+            return frontMatch;
         } catch (error) {
             throw new InternalServerErrorException('Error al comparar las fotos del documento con la selfie, intenta de nuevo');
         }
     }
 
+    /**
+     * Compara dos imágenes utilizando AWS Rekognition.
+     * @param sourceBuffer - Buffer de la imagen de origen.
+     * @param targetBuffer - Buffer de la imagen de destino.
+     * @returns `true` si las caras coinciden; `false` de lo contrario.
+     */
     async compareFacesBuffer(sourceBuffer: Buffer, targetBuffer: Buffer): Promise<boolean> {
         try {
             const command = new CompareFacesCommand({
@@ -144,21 +148,48 @@ export class AwsService {
     }
 
 
-    async matchFieldsWithEnrollment(extractedText: string[], tenantId: string): Promise<Record<string, string>> {
-        const expectedFields = await this.getExpectedFields();
-        return await this.cohereService.matchFields(extractedText, expectedFields);
-    }
-
-    async getExpectedFields(): Promise<string[]> {
-        const sampleDocument = await this.enrollmentModel.findOne().lean();
-        if (!sampleDocument) {
-            throw new InternalServerErrorException('No se encontraron documentos en la colección de empadronamientos.');
+    /**
+     * Realiza la coincidencia de campos extraídos con los campos esperados del padrón.
+     * @param extractedText - Lista de texto extraído del documento.
+     * @returns Un objeto con los campos coincidentes.
+     */
+    async matchFieldsWithEnrollment(extractedText: string[]): Promise<Record<string, string>> {
+        try {
+            const expectedFields = await this.getExpectedFields(); // Obtener campos esperados
+            return await this.cohereService.matchFields(extractedText, expectedFields);
+        } catch (error) {
+            throw new InternalServerErrorException(
+                `Error al realizar la coincidencia de campos: ${error.message}`,
+            );
         }
-
-        return Object.keys(sampleDocument).filter(
-            key => !['_id', '__v', 'tenant', 'user', 'createdAt', 'updatedAt'].includes(key)
-        );
     }
+
+    /**
+     * Obtiene los campos esperados del modelo de empadronamiento.
+     * @returns Una lista de los campos válidos.
+     * @throws InternalServerErrorException si no se encuentran documentos en la colección.
+     */
+    async getExpectedFields(): Promise<string[]> {
+        try {
+            const sampleDocument = await this.enrollmentModel.findOne().lean(); // Obtener un documento de muestra
+            if (!sampleDocument) {
+                throw new InternalServerErrorException(
+                    'No se encontraron documentos en la colección de empadronamientos.',
+                );
+            }
+
+            // Filtrar claves válidas, excluyendo las que son internas o irrelevantes
+            const excludedFields = ['_id', '__v', 'tenant', 'user', 'createdAt', 'updatedAt'];
+            return Object.keys(sampleDocument).filter(
+                (key) => !excludedFields.includes(key),
+            );
+        } catch (error) {
+            throw new InternalServerErrorException(
+                `Error al obtener campos esperados: ${error.message}`,
+            );
+        }
+    }
+
 
     /**
     * Encuentra un empadronamiento utilizando campos coincidentes en un worker thread.
@@ -166,13 +197,14 @@ export class AwsService {
     * @param tenantId - ID del tenant.
     * @returns Promesa que resuelve con el empadronamiento encontrado.
     */
-    async findEnrollmentByMatchedFields(matchedFields: Record<string, string>, tenantId: string): Promise<any> {
+    async findEnrollmentByMatchedFields(matchedFields: Record<string, string>, userId: string, tenantId: string) {
         return new Promise((resolve, reject) => {
             const workerPath = path.resolve(__dirname, '../workers/enrollment.worker.js');
 
             const worker = new Worker(workerPath, {
                 workerData: {
                     batch: [matchedFields],
+                    userId,
                     tenantId,
                 },
             });
@@ -200,5 +232,18 @@ export class AwsService {
                 }
             });
         });
+    }
+
+    /**
+     * Valida si el usuario es miembro del tenant.
+     * @param userId ID del usuario.
+     * @param tenantId ID del tenant.
+     * @throws UnauthorizedException
+     */
+    private async validateUserMembership(userId: string, tenantId: string): Promise<void> {
+        const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
+        if (!isMember) {
+            throw new UnauthorizedException('No tienes permiso para acceder a este tenant.');
+        }
     }
 }
