@@ -18,4 +18,5 @@ export const envSchema = Joi.object({
   AWS_ACCESS_KEY_ID: Joi.string().required(),
   AWS_SECRET_ACCESS_KEY: Joi.string().required(),
   AWS_REGION: Joi.string().required(),
+  COHERE_API_KEY: Joi.string().required(),
 })

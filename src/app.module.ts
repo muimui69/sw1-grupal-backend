@@ -18,6 +18,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { LogsInterceptor } from './common/interceptors/logs.Interceptor';
 import { AwsModule } from './aws/aws.module';
 import { EnrollmentModule } from './enrollment/enrollment.module';
+import { CohereModule } from './cohere/cohere.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { EnrollmentModule } from './enrollment/enrollment.module';
     BackupModule,
     AwsModule,
     EnrollmentModule,
+    CohereModule,
   ],
   providers: [
     LogsService,
