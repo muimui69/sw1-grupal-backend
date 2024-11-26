@@ -13,8 +13,7 @@ export class BlockchainService {
         private readonly httpService: HttpService,
     ) {
         // Obtener la URL del microservicio Hardhat desde las variables de configuración
-        this.hardhatMicroserviceUrl =
-            this.configService.get<string>('hardhat_microservice_url');
+        this.hardhatMicroserviceUrl = this.configService.get<string>('hardhat_microservice_url');
     }
 
     /**

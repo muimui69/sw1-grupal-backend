@@ -24,3 +24,8 @@ export interface ElectionDetails {
     electionName: string;
     electionDescription: string;
 }
+
+export interface IVote {
+    memberTenantId: string;
+    candidateId: number;
+}

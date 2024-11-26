@@ -15,10 +15,11 @@ export class TenantContractService {
     private wallet: ethers.Wallet;
 
     constructor(
-        private configService: ConfigService,
-        private httpService: HttpService,
-        @InjectModel(MemberTenant.name) private memberTenantModel: Model<MemberTenant>
+        private readonly configService: ConfigService,
+        private readonly httpService: HttpService,
+        @InjectModel(MemberTenant.name) private readonly memberTenantModel: Model<MemberTenant>
     ) {
+        // Configuración de la URL del microservicio y la conexión a la blockchain
         this.hardhatMicroserviceUrl = this.configService.get<string>('hardhat_microservice_url');
         const providerUrl = this.configService.get<string>('blockchain_url');
         const privateKey = this.configService.get<string>('wallet_private_key');
@@ -26,8 +27,13 @@ export class TenantContractService {
         this.wallet = new ethers.Wallet(privateKey, this.provider);
     }
 
+    /**
+     * Despliega el contrato de Tenant y actualiza el MemberTenant con la dirección del contrato
+     * @param userId - ID del usuario
+     * @param tenantId - ID del tenant
+     * @returns Miembro actualizado de Tenant
+     */
     async deployTenantContract(userId: string, tenantId: string): Promise<MemberTenant> {
-
         if (!isValidObjectId(userId)) {
             throw new BadRequestException("El ID de usuario proporcionado no es válido.");
         }
@@ -36,12 +42,13 @@ export class TenantContractService {
         }
 
         try {
+            // Llamada a la API del microservicio para desplegar el contrato de Tenant
             const response = await firstValueFrom(
                 this.httpService.post(`${this.hardhatMicroserviceUrl}/deploy-tenant-contract`)
             );
 
             const { contractTenant } = response.data;
-            console.log(contractTenant)
+            console.log(contractTenant);
 
             if (!contractTenant) {
                 throw new Error('No se pudo obtener la dirección del contrato de Tenant');
@@ -53,14 +60,14 @@ export class TenantContractService {
             const existingMemberTenant = await this.memberTenantModel.findOne({
                 user: userObjectId,
                 tenant: tenantObjectId,
-                role: 'owner'
+                role: 'owner',
             });
-
 
             if (!existingMemberTenant) {
                 throw new Error('No se encontró un documento MemberTenant con los criterios proporcionados');
             }
 
+            // Actualiza el MemberTenant con la dirección del contrato de Tenant
             const memberTenant = await this.memberTenantModel.findOneAndUpdate(
                 { user: userObjectId, tenant: tenantObjectId, role: 'owner' },
                 { $set: { tenantAddress: contractTenant } },
@@ -77,6 +84,13 @@ export class TenantContractService {
         }
     }
 
+    /**
+     * Crea una elección en el contrato Tenant
+     * @param memberTenantId - ID del MemberTenant
+     * @param subdomain - Subdominio de la elección
+     * @param electionAddress - Dirección del contrato de elección
+     * @returns Resultado de la transacción
+     */
     async createElection(memberTenantId: string, subdomain: string, electionAddress: string) {
         const memberTenant = await this.memberTenantModel.findById(memberTenantId);
         if (!memberTenant || !memberTenant.tenantAddress) {
@@ -94,7 +108,12 @@ export class TenantContractService {
         }
     }
 
-    // Método para obtener los detalles de una elección en el contrato Tenant
+    /**
+     * Obtiene los detalles de una elección en el contrato Tenant
+     * @param memberTenantId - ID del MemberTenant
+     * @param subdomain - Subdominio de la elección
+     * @returns Detalles de la elección
+     */
     async getElectionDetails(memberTenantId: string, subdomain: string) {
         const memberTenant = await this.memberTenantModel.findById(memberTenantId);
         if (!memberTenant || !memberTenant.tenantAddress) {
@@ -105,7 +124,7 @@ export class TenantContractService {
 
         try {
             const electionData = await tenantContract.getElection(subdomain);
-            console.log(electionData)
+            console.log(electionData);
             return {
                 electionAddress: electionData[0],
                 electionName: electionData[1],
