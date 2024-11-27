@@ -7,7 +7,6 @@ import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { MemberTenant } from 'src/tenant/entity';
 import electionAbi from '../abis/contracts/Election.json';
-import { VoteCandidateDto } from '../dto/vote-candidate.dto';
 
 @Injectable()
 export class ElectionContractService {
@@ -106,25 +105,31 @@ export class ElectionContractService {
    * @param voteCandidateDto - Datos del voto (ID del Tenant y del candidato).
    * @returns Confirmación del voto registrado.
    */
-  async vote(voteCandidateDto: VoteCandidateDto) {
-    const { memberTenantId, candidateId } = voteCandidateDto;
+  async vote(memberTenantId: string, enrollmentId: string, candidateId: number) {
 
+    // Buscar el MemberTenant asociado al contrato
     const memberTenant = await this.memberTenantModel.findById(memberTenantId);
     if (!memberTenant || !memberTenant.electionAddress) {
-      throw new Error('Election address no esta en el MemberTenant');
+      throw new BadRequestException('Dirección del contrato de Election no configurada.');
     }
 
+    // Obtener el contrato de Election
     const electionContract = new ethers.Contract(memberTenant.electionAddress, electionAbi.abi, this.wallet);
 
+    // Generar el voterHash utilizando el enrollmentId, tenantId y secretKey
+    const voterHash = this.generateVoterHash(enrollmentId, String(memberTenant.tenant), "queHuboParse");
+
     try {
-      const tx = await electionContract.vote(candidateId);
+      // Llamar al método vote del contrato, pasando el candidateId y el voterHash
+      const tx = await electionContract.vote(candidateId, voterHash);
       await tx.wait();
 
-      return { success: true, candidateId };
+      return { success: true, candidateId, enrollmentId };
     } catch (error) {
       throw new BadRequestException(`Error al votar: ${error.message}`);
     }
   }
+
 
   /**
    * Finaliza la elección en el contrato.
@@ -148,4 +153,98 @@ export class ElectionContractService {
       throw new BadRequestException(`Error al finalizar la elección: ${error.message}`);
     }
   }
+
+  /**
+ * Verifica si un usuario ha votado.
+ * @param memberTenantId - ID del MemberTenant asociado al contrato.
+ * @returns Si el usuario ha votado o no.
+ */
+  async hasUserVoted(memberTenantId: string, enrollmentId: string): Promise<boolean> {
+    if (!memberTenantId || !enrollmentId) {
+      throw new BadRequestException('El parámetro "memberTenantId" y "enrollmentId" son requeridos.');
+    }
+
+    // Buscar el MemberTenant asociado al contrato
+    const memberTenant = await this.memberTenantModel.findById(memberTenantId);
+    if (!memberTenant || !memberTenant.electionAddress) {
+      throw new BadRequestException('Dirección del contrato de Election no configurada.');
+    }
+
+    // Obtener el contrato de Election
+    const electionContract = new ethers.Contract(memberTenant.electionAddress, electionAbi.abi, this.wallet);
+
+    try {
+      // Generar el voterHash usando el enrollmentId, tenantId y secretKey
+      const voterHash = this.generateVoterHash(enrollmentId, String(memberTenant.tenant), "queHuboParse");
+
+      // Consultar si el votante ya ha votado
+      const hasVoted = await electionContract.hasUserVoted(voterHash);
+
+      return hasVoted;
+    } catch (error) {
+      throw new BadRequestException(`Error al verificar el estado de voto: ${error.message} `);
+    }
+  }
+
+
+  /**
+   * Obtiene el total de votos emitidos en la elección.
+   * @param memberTenantId - ID del MemberTenant asociado al contrato.
+   * @returns Total de votos emitidos.
+   */
+  async getTotalVotes(memberTenantId: string): Promise<number> {
+    if (!memberTenantId) {
+      throw new BadRequestException('El parámetro "memberTenantId" es requerido.');
+    }
+
+    const memberTenant = await this.memberTenantModel.findById(memberTenantId);
+    if (!memberTenant || !memberTenant.electionAddress) {
+      throw new BadRequestException('Dirección del contrato de Election no configurada.');
+    }
+
+    const electionContract = new ethers.Contract(memberTenant.electionAddress, electionAbi.abi, this.wallet);
+
+    try {
+      const totalVotes = await electionContract.getTotalVotes();
+      return Number(totalVotes);
+    } catch (error) {
+      throw new BadRequestException(`Error al obtener el total de votos: ${error.message} `);
+    }
+  }
+
+  /**
+   * Obtiene el total de votos recibidos por un candidato específico.
+   * @param memberTenantId - ID del MemberTenant asociado al contrato.
+   * @param candidateId - ID del candidato.
+   * @returns Total de votos del candidato.
+   */
+  async getVotesByCandidate(memberTenantId: string, candidateId: number): Promise<number> {
+    if (!memberTenantId || candidateId === undefined) {
+      throw new BadRequestException('Los parámetros "memberTenantId" y "candidateId" son requeridos.');
+    }
+
+    const memberTenant = await this.memberTenantModel.findById(memberTenantId);
+    if (!memberTenant || !memberTenant.electionAddress) {
+      throw new BadRequestException('Dirección del contrato de Election no configurada.');
+    }
+
+    const electionContract = new ethers.Contract(memberTenant.electionAddress, electionAbi.abi, this.wallet);
+
+    try {
+      const votes = await electionContract.getVotesByCandidate(candidateId);
+      return Number(votes);
+    } catch (error) {
+      throw new BadRequestException(`Error al obtener los votos del candidato: ${error.message} `);
+    }
+  }
+
+  private generateVoterHash(enrollmentId: string, tenantId: string, secretKey: string): string {
+    enrollmentId = String(enrollmentId);
+    tenantId = String(tenantId);
+    secretKey = String(secretKey);
+
+    const input = `${enrollmentId} -${tenantId} -${secretKey} `;
+    return ethers.keccak256(ethers.toUtf8Bytes(input));
+  }
+
 }

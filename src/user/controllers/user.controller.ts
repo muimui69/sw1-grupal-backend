@@ -10,9 +10,7 @@ import { CreateUserDto } from '../dto';
 import { UserService } from '../services/user.service';
 import { FormDataRequest } from 'nestjs-form-data';
 
-/**
- * Controlador para gestionar operaciones relacionadas con los usuarios.
- */
+
 @Controller('user')
 export class UserController {
   constructor(

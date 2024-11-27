@@ -10,12 +10,17 @@ import {
 import { TenantService } from '../services/tenant.service';
 import { TokenAuthGuard } from 'src/auth/guard';
 import { Request } from 'express';
-import { TenantIdGuard } from '../guard';
+import { TokenTenantGuard } from '../guard/token-tenant.guard';
 
 @Controller('tenant')
 export class TenantController {
     constructor(private readonly tenantService: TenantService) { }
 
+    /**
+     * Obtiene todos los tenants asociados a un usuario.
+     * @param req - Solicitud HTTP, incluye el ID del usuario.
+     * @returns Lista de tenants asociados al usuario.
+     */
     @Get('user')
     @UseGuards(TokenAuthGuard)
     @HttpCode(HttpStatus.OK)
@@ -34,6 +39,12 @@ export class TenantController {
         };
     }
 
+    /**
+     * Obtiene los detalles de un tenant específico por su subdominio y el usuario asociado.
+     * @param req - Solicitud HTTP, incluye el ID del usuario.
+     * @param subdomain - Subdominio del tenant.
+     * @returns Detalles del tenant para el usuario.
+     */
     @Get(':subdomain/user')
     @UseGuards(TokenAuthGuard)
     @HttpCode(HttpStatus.OK)
@@ -54,8 +65,13 @@ export class TenantController {
     }
 
 
+    /**
+     * Obtiene el ID del MemberTenant para un usuario dado un tenantId.
+     * @param req - Solicitud HTTP, incluye el ID del usuario y el tenantId.
+     * @returns ID del MemberTenant.
+     */
     @Get('user/membertenantId')
-    @UseGuards(TokenAuthGuard, TenantIdGuard)
+    @UseGuards(TokenAuthGuard, TokenTenantGuard)
     @HttpCode(HttpStatus.OK)
     public async getMemberTenantId(
         @Req() req: Request,

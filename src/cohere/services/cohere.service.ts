@@ -24,18 +24,13 @@ export class CohereService {
    */
   async matchFields(extractedText: string[], expectedFields: string[]): Promise<Record<string, string>> {
     try {
-      const joinedText = extractedText.join('\n');
-
       const prompt = `
-                Match the following fields with the given text. 
-                Return JSON with each field as key and the most relevant part of the text as value.
-                
-                Fields:
-                ${expectedFields.join(', ')}
+        Match the following fields with the given text. 
+        Return JSON with each field as key and the most relevant part of the text as value.
 
-                Text:
-                ${joinedText}
-            `;
+        Fields: ${expectedFields.join(', ')}
+        Text: ${extractedText.join(' ')}
+      `;
 
       const response = await this.cohere.chat({
         model: "command-r-plus-08-2024",
@@ -43,7 +38,7 @@ export class CohereService {
           role: "user",
           content: prompt
         }],
-        temperature: 0.5,
+        temperature: 0.2,
       });
 
       const matchedFields = JSON.parse(response.message.content[0].text);

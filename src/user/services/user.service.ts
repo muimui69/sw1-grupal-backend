@@ -6,13 +6,10 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
 import * as bcrypt from 'bcrypt';
-
 import { User } from '../entity';
 import { CreateUserDto } from '../dto';
 
-/**
- * Servicio para gestionar operaciones relacionadas con los usuarios.
- */
+
 @Injectable()
 export class UserService {
   constructor(

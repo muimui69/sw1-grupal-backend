@@ -2,9 +2,6 @@ import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { Multer } from 'multer';
 
-/**
- * Servicio para manejar la carga de imágenes en Cloudinary.
- */
 @Injectable()
 export class CloudinaryService {
     constructor(

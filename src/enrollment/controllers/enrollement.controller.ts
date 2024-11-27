@@ -9,13 +9,14 @@ import {
     BadRequestException,
     UseGuards,
     Req,
+    HttpCode,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Multer } from 'multer';
 import { TokenAuthGuard } from 'src/auth/guard';
-import { TenantIdGuard } from 'src/tenant/guard';
 import { Request } from 'express';
 import { EnrollmentService } from '../services/enrollment.service';
+import { TokenTenantGuard } from 'src/tenant/guard/token-tenant.guard';
 
 @Controller('enrollment')
 export class EnrollmentController {
@@ -28,8 +29,9 @@ export class EnrollmentController {
      * @param expectedHeaders - Columnas esperadas enviadas desde el frontend.
      */
     @Post('upload/excel')
-    @UseGuards(TokenAuthGuard, TenantIdGuard)
+    @UseGuards(TokenAuthGuard, TokenTenantGuard)
     @UseInterceptors(FileInterceptor('file'))
+    @HttpCode(HttpStatus.CREATED)
     async uploadExcel(
         @Req() req: Request,
         @UploadedFile() file: Multer.File,
@@ -39,6 +41,7 @@ export class EnrollmentController {
             throw new BadRequestException('No se ha proporcionado un archivo.');
         }
 
+        const statusCode = HttpStatus.CREATED;
         const userId = req.userId;
         const tenantId = req.tenantId;
 
@@ -52,7 +55,7 @@ export class EnrollmentController {
         await this.enrollmentService.processExcel(file.buffer, headersArray, userId, tenantId);
 
         return {
-            statusCode: HttpStatus.CREATED,
+            statusCode,
             message: 'Archivo Excel procesado exitosamente.',
         };
     }
@@ -64,8 +67,9 @@ export class EnrollmentController {
      * @param expectedHeaders - Columnas esperadas enviadas desde el frontend.
      */
     @Post('upload/csv')
-    @UseGuards(TokenAuthGuard, TenantIdGuard)
+    @UseGuards(TokenAuthGuard, TokenTenantGuard)
     @UseInterceptors(FileInterceptor('file'))
+    @HttpCode(HttpStatus.CREATED)
     async uploadCSV(
         @Req() req: Request,
         @UploadedFile() file: Multer.File,
@@ -74,6 +78,8 @@ export class EnrollmentController {
         if (!file) {
             throw new BadRequestException('No se ha proporcionado un archivo.');
         }
+
+        const statusCode = HttpStatus.CREATED;
 
         const userId = req.userId;
         const tenantId = req.tenantId;
@@ -88,7 +94,7 @@ export class EnrollmentController {
         try {
             await this.enrollmentService.processCSV(file.buffer, headersArray, userId, tenantId);
             return {
-                statusCode: HttpStatus.CREATED,
+                statusCode,
                 message: 'Archivo CSV procesado exitosamente.',
             };
         } catch (error) {

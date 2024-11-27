@@ -1,16 +1,27 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
 import { Worker } from 'worker_threads';
 import * as path from 'path';
-import { promises as fs } from 'fs';
+import { existsSync, promises as fs, mkdirSync } from 'fs';
 import * as fastCsv from 'fast-csv';
+import * as jwt from 'jsonwebtoken';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { EnrollmentTokenResult, IEnrollmentToken } from '../interfaces/IToken-enrollment.interface';
+import { isValidObjectId } from 'mongoose';
+
 
 @Injectable()
 export class EnrollmentService {
     private readonly tempDir = path.join('./temp');
 
-    constructor() {
-        fs.mkdir(this.tempDir, { recursive: true }).catch(console.error);
+    constructor(
+        private readonly jwtService: JwtService,
+        private readonly configService: ConfigService,
+    ) {
+        if (!existsSync(this.tempDir)) {
+            mkdirSync(this.tempDir, { recursive: true })
+        }
     }
 
     /**
@@ -51,7 +62,6 @@ export class EnrollmentService {
                         }
                     }
                 }
-
                 // Procesa cualquier fila restante
                 if (batch.length > 0) {
                     await this.processBatch(batch, expectedHeaders, userId, tenantId);
@@ -155,11 +165,9 @@ export class EnrollmentService {
 
     /**
      * Extrae y asocia los datos de una fila del archivo CSV con los encabezados correspondientes.
-     * 
      * @param row - Objeto que representa una fila del CSV, donde las claves son los encabezados y los valores son los datos de esa fila.
      * @param headers - Array de cadenas que representan los encabezados esperados para la asociación con los datos de la fila.
      * @returns Un objeto donde cada clave es un encabezado y su valor es el dato correspondiente de la fila.
-     *
      */
     private extractRowDataArray(row: any, headers: string[]): any[] {
         return headers.map(header => row[header] || null); // Devuelve un arreglo con los valores en el orden de los encabezados
@@ -224,4 +232,84 @@ export class EnrollmentService {
             });
         });
     }
+
+    /**
+     * Genera un token JWT basado en el `enrollmentId`.
+     * @param enrollmentId - El ID del enrollment que se utilizará para generar el token.
+     * @returns El token JWT firmado.
+     */
+    public async generateEnrollmentToken(memberTenantId: string, enrollmentId: string,): Promise<any> {
+        if (!isValidObjectId(enrollmentId)) {
+            throw new BadRequestException(`The value ${enrollmentId} is not a valid ObjectId.`);
+        }
+
+        if (!isValidObjectId(memberTenantId)) {
+            throw new BadRequestException(`The value ${memberTenantId} is not a valid ObjectId.`);
+        }
+
+        const tokenPayload = {
+            memberTenantId: memberTenantId,
+            enrollmentId: enrollmentId,
+        };
+
+        const tenantToken = this.generateJwt({
+            payload: tokenPayload,
+            expires: 10 * 24 * 60 * 60, // Token expira en 10 días
+        });
+
+        return { token: tenantToken };
+    }
+
+    /**
+     * Genera un token JWT.
+     * @param options.payload - Información que se incluirá en el token.
+     * @param options.expires - Tiempo de expiración del token en segundos o como cadena de texto.
+     * @returns El token JWT firmado.
+     */
+    public generateJwt({
+        payload,
+        expires,
+    }: {
+        payload: jwt.JwtPayload;
+        expires: number | string;
+    }): string {
+        return this.jwtService.sign(payload, {
+            secret: this.configService.get<string>('secret_key_jwt'),
+            expiresIn: expires,
+        });
+    }
+
+    /**
+     * Decodifica un token JWT y verifica si ha expirado.
+     * @param token - Token JWT a decodificar.
+     * @returns IEnrollmentToken con el enrollmentId y el estado de expiración o una cadena indicando un token inválido.
+     */
+    public decodeJwt(token: string): IEnrollmentToken | string {
+        try {
+            const decodedToken = jwt.decode(token) as EnrollmentTokenResult;
+
+            if (!decodedToken) {
+                throw new Error('El token no se puede decodificar');
+            }
+
+            const { enrollmentId, memberTenantId, exp } = decodedToken;
+
+            if (!enrollmentId || !memberTenantId) {
+                throw new Error('El token no contiene enrollmentId o memberTenantId válido');
+            }
+
+            const currentDate = new Date().getTime() / 1000;
+            const isExpired = exp <= currentDate;
+
+            return {
+                enrollmentId: decodedToken.enrollmentId,
+                memberTenantId: decodedToken.memberTenantId,
+                isExpired,
+            };
+        } catch (error) {
+            console.error('Error al decodificar el JWT de tenant:', error);
+            return 'Token inválido';
+        }
+    }
 }
+

@@ -8,6 +8,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from 'src/user/user.module';
 import { AuthModule } from 'src/auth/auth.module';
 import { TenantModule } from 'src/tenant/tenant.module';
+import { EnrollmentService } from 'src/enrollment/services/enrollment.service';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -20,9 +22,10 @@ import { TenantModule } from 'src/tenant/tenant.module';
     UserModule,
     AuthModule,
     TenantModule,
-    CohereModule
+    CohereModule,
+    JwtModule,
   ],
   controllers: [AwsController],
-  providers: [AwsService, CohereService],
+  providers: [AwsService, CohereService, EnrollmentService],
 })
 export class AwsModule { }

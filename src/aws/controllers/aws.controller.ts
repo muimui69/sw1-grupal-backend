@@ -7,13 +7,14 @@ import {
   BadRequestException,
   Req,
   UseGuards,
+  HttpCode,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { AwsService } from '../services/aws.service';
 import { Multer } from 'multer';
 import { TokenAuthGuard } from 'src/auth/guard';
-import { TenantIdGuard } from 'src/tenant/guard';
 import { Request } from 'express';
+import { TokenTenantGuard } from 'src/tenant/guard/token-tenant.guard';
 
 @Controller('aws')
 export class AwsController {
@@ -26,8 +27,9 @@ export class AwsController {
    * @returns Información validada del usuario.
    */
   @Post('process-document')
-  @UseGuards(TokenAuthGuard, TenantIdGuard)
+  @UseGuards(TokenAuthGuard, TokenTenantGuard)
   @UseInterceptors(FilesInterceptor('files', 2))
+  @HttpCode(HttpStatus.OK)
   async processDocument(
     @Req() req: Request,
     @UploadedFiles() files: Multer.File[],
@@ -36,6 +38,7 @@ export class AwsController {
       throw new BadRequestException('Debes subir las fotos del anverso y reverso del documento');
     }
 
+    const statusCode = HttpStatus.OK;
     const userId = req.userId;
     const tenantId = req.tenantId;
     const [frontFile, backFile] = files;
@@ -44,7 +47,7 @@ export class AwsController {
       const result = await this.awsService.processAndValidateDocument(frontFile.buffer, backFile.buffer, userId, tenantId);
 
       return {
-        statusCode: HttpStatus.OK,
+        statusCode,
         message: 'Documento procesado y validado exitosamente',
         data: result,
       };
@@ -59,8 +62,9 @@ export class AwsController {
    * @returns Resultado de la comparación facial.
    */
   @Post('compare-face')
-  @UseGuards(TokenAuthGuard, TenantIdGuard)
+  @UseGuards(TokenAuthGuard, TokenTenantGuard)
   @UseInterceptors(FilesInterceptor('files', 3)) // Aceptar hasta 3 archivos
+  @HttpCode(HttpStatus.OK)
   async compareFace(
     @Req() req: Request,
     @UploadedFiles() files: Multer.File[]
@@ -68,6 +72,8 @@ export class AwsController {
     if (!files || files.length !== 3) {
       throw new BadRequestException('Debes subir tres fotos: anverso, reverso del documento y tu selfie.');
     }
+
+    const statusCode = HttpStatus.OK;
 
     const userId = req.userId;
     const tenantId = req.tenantId;
@@ -84,7 +90,7 @@ export class AwsController {
       );
 
       return {
-        statusCode: HttpStatus.OK,
+        statusCode,
         message: 'Comparación facial completada',
         data: { isFaceMatch },
       };

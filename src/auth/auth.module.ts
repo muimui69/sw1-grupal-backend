@@ -8,21 +8,19 @@ import { UserModule } from 'src/user/user.module';
 import { TenantModule } from 'src/tenant/tenant.module';
 
 @Module({
-  providers: [AuthService],
-  imports:[
-    JwtModule,
+  imports: [
     MongooseModule.forFeature([
       {
         name: User.name,
         schema: userSchema
       }
     ]),
+    JwtModule,
     UserModule,
     TenantModule
   ],
-  exports: [
-    AuthService
-  ],
-  controllers: [AuthController]
+  controllers: [AuthController],
+  providers: [AuthService],
+  exports: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }

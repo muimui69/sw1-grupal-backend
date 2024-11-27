@@ -9,21 +9,23 @@ import { BlockchainService } from './services/blockchain.service';
 import { CandidateService } from './services/candidate.service';
 import { PinataModule } from 'src/pinata/pinata.module';
 import { CandidateController } from './controllers/candidate.controller';
+import { EnrollmentModule } from 'src/enrollment/enrollment.module';
 
 @Module({
   imports: [
-    ConfigModule,
-    HttpModule,
-    PinataModule,
     MongooseModule.forFeature([
       {
         name: MemberTenant.name,
         schema: MemberTenantSchema
       },
     ]),
+    ConfigModule,
+    HttpModule,
+    PinataModule,
+    EnrollmentModule,
   ],
-  providers: [BlockchainService, ElectionContractService, TenantContractService, CandidateService],
   controllers: [ElectionContractController, TenantContractController, CandidateController],
+  providers: [BlockchainService, ElectionContractService, TenantContractService, CandidateService],
   exports: [BlockchainService, ElectionContractService, TenantContractService, CandidateService],
 })
 export class BlockchainModule { }

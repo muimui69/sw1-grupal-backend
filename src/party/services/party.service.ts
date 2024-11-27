@@ -25,18 +25,6 @@ export class PartyService {
   ) { }
 
   /**
-   * Valida si un usuario es miembro del tenant.
-   * @param userId ID del usuario.
-   * @param tenantId ID del tenant.
-   */
-  private async validateUserMembership(userId: string, tenantId: string): Promise<void> {
-    const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
-    if (!isMember) {
-      throw new UnauthorizedException('No tienes permiso para acceder a este tenant.');
-    }
-  }
-
-  /**
    * Obtiene una lista de partidos según los filtros especificados.
    * @param userId ID del usuario.
    * @param tenantId ID del tenant.
@@ -209,5 +197,17 @@ export class PartyService {
     }
 
     return deletedParty;
+  }
+
+  /**
+   * Valida si un usuario es miembro del tenant.
+   * @param userId ID del usuario.
+   * @param tenantId ID del tenant.
+   */
+  private async validateUserMembership(userId: string, tenantId: string): Promise<void> {
+    const isMember = await this.tenantService.isUserMemberOfTenant(userId, tenantId);
+    if (!isMember) {
+      throw new UnauthorizedException('No tienes permiso para acceder a este tenant.');
+    }
   }
 }

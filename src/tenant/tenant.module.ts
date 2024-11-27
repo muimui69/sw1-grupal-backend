@@ -11,6 +11,7 @@ import { Party, PartySchema } from 'src/party/entity';
 import { TenantController } from './controllers/tenant.controller';
 import { ElectionContractService, TenantContractService } from 'src/blockchain/services';
 import { HttpModule } from '@nestjs/axios';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { HttpModule } from '@nestjs/axios';
         schema: PartySchema,
       },
     ]),
+    JwtModule,
     UserModule,
     HttpModule,
     forwardRef(() => AuthModule),

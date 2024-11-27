@@ -12,7 +12,12 @@ export class SuscriptionController {
     private readonly suscriptionService: SuscriptionService
   ) { }
 
-
+  /**
+   * Crea una nueva suscripción para un usuario.
+   * @param createTenantDto - Datos para crear la suscripción.
+   * @param req - Solicitud HTTP, incluye el usuario autenticado.
+   * @returns Respuesta con los datos de la suscripción.
+   */
   @Post("create")
   @UseGuards(TokenAuthGuard)
   @HttpCode(HttpStatus.CREATED)
@@ -28,6 +33,12 @@ export class SuscriptionController {
       }
     }
   }
+
+  /**
+   * Webhook para procesar los pagos de Stripe.
+   * @param body - Cuerpo del evento de Stripe cuando una sesión de pago se completa.
+   * @returns Respuesta con la información de la suscripción procesada.
+   */
   @Post("webhook")
   @HttpCode(HttpStatus.CREATED)
   public async suscriptionWebhook(@Body() body: Stripe.CheckoutSessionCompletedEvent) {

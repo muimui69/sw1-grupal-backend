@@ -8,9 +8,8 @@ export class LogsService {
     private readonly logFilePath = join(this.logDirectory, 'activity.log');
 
     constructor() {
-        // Asegurarse de que el directorio de logs exista
         if (!existsSync(this.logDirectory)) {
-            mkdirSync(this.logDirectory);
+            mkdirSync(this.logDirectory, { recursive: true });
         }
     }
 

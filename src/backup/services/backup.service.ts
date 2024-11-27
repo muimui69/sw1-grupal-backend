@@ -1,5 +1,6 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { exec } from 'child_process';
+import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
 @Injectable()
@@ -8,9 +9,8 @@ export class BackupService {
     private readonly backupPath = join('./backups');
 
     constructor() {
-        // Crea la carpeta de backups si no existe
-        if (!require('fs').existsSync(this.backupPath)) {
-            require('fs').mkdirSync(this.backupPath, { recursive: true });
+        if (!existsSync(this.backupPath)) {
+            mkdirSync(this.backupPath, { recursive: true });
         }
     }
 

@@ -1,32 +1,29 @@
-import { Controller, Get, Param, HttpStatus, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Param, HttpStatus, UseGuards, Req, HttpCode } from '@nestjs/common';
 import { BallotService } from '../service/ballot.service';
 import { TokenAuthGuard } from 'src/auth/guard';
-import { TenantIdGuard } from 'src/tenant/guard';
 import { Request } from 'express';
+import { TokenTenantGuard } from 'src/tenant/guard/token-tenant.guard';
 
-/**
- * Controlador para manejar las operaciones relacionadas con las boletas electorales.
- */
 @Controller('ballot')
 export class BallotController {
   constructor(private readonly ballotService: BallotService) { }
 
   /**
    * Genera una boleta electoral basada en el `memberTenantId` proporcionado.
-   *
-   * @param req Request con el ID del usuario y tenant en los parámetros.
-   * @param memberTenantId ID del MemberTenant relacionado con la elección.
+   * @param req Request con el ID del usuario , ID tenant y el ID member tenant.
    * @returns Boleta electoral generada exitosamente.
    */
-  @Get('generate/:memberTenantId')
-  @UseGuards(TokenAuthGuard, TenantIdGuard)
+  @Get('generate')
+  @UseGuards(TokenAuthGuard, TokenTenantGuard)
+  @HttpCode(HttpStatus.OK)
   async generateBallot(
     @Req() req: Request,
-    @Param('memberTenantId') memberTenantId: string
   ) {
     const statusCode = HttpStatus.OK;
+
     const userId = req.userId;
     const tenantId = req.tenantId;
+    const memberTenantId = req.memberTenantId;
 
     const ballot = await this.ballotService.generateBallot(memberTenantId, userId, tenantId);
 

@@ -11,11 +11,11 @@ export class LogsInterceptor implements NestInterceptor {
         const res = context.switchToHttp().getResponse();
 
         res.on('finish', async () => {
-            const tenantId = req.headers['tenant-id'];
-            const userId = req.userId;
+            const tenant = req.headers['tenant-token'];
+            const user = req.headers['auth-token'];
 
-            if (!tenantId || !userId) {
-                console.warn('No se registró el log porque faltan tenantId o userId.');
+            if (!tenant || !user) {
+                console.warn('No se registró el log porque faltan tenant-token o auth-token.');
                 return;
             }
 

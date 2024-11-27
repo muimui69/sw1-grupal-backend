@@ -9,6 +9,7 @@ import { EnrollmentService } from './services/enrollment.service';
 import { EnrollmentConfigurationController } from './controllers/enrollment-configuration.controller';
 import { EnrollmentConfigurationService } from './services/enrollment-configuration.service';
 import { EnrollmentConfiguration, EnrollmentConfigurationSchema } from './entities/enrollment-confiuration.entity';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -22,11 +23,13 @@ import { EnrollmentConfiguration, EnrollmentConfigurationSchema } from './entiti
         schema: EnrollmentConfigurationSchema,
       },
     ]),
+    JwtModule,
     AuthModule,
     TenantModule,
     forwardRef(() => UserModule),
   ],
   controllers: [EnrollmentController, EnrollmentConfigurationController],
   providers: [EnrollmentService, EnrollmentConfigurationService],
+  exports: [EnrollmentService],
 })
 export class EnrollmentModule { }

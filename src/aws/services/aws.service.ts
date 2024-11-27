@@ -4,12 +4,13 @@ import { TextractClient, DetectDocumentTextCommand } from '@aws-sdk/client-textr
 import { RekognitionClient, CompareFacesCommand } from '@aws-sdk/client-rekognition';
 import * as fs from 'fs/promises';
 import path, { join } from 'path';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Enrollment } from 'src/enrollment/entities/enrollment.entity';
 import { CohereService } from '../../cohere/services/cohere.service';
 import { Worker } from 'worker_threads';
 import { TenantService } from 'src/tenant/services/tenant.service';
+import { EnrollmentService } from 'src/enrollment/services/enrollment.service';
 
 @Injectable()
 export class AwsService {
@@ -21,6 +22,7 @@ export class AwsService {
         private readonly configService: ConfigService,
         private readonly cohereService: CohereService,
         private readonly tenantService: TenantService,
+        private readonly enrollmentService: EnrollmentService,
         @InjectModel(Enrollment.name) private readonly enrollmentModel: Model<Enrollment>
     ) {
         this.rekognitionClient = new RekognitionClient({
@@ -63,9 +65,17 @@ export class AwsService {
         const matchedFields = await this.matchFieldsWithEnrollment(combinedText);
 
         // 4. Buscar el usuario en la base de datos
-        const matchedEnrollment = await this.findEnrollmentByMatchedFields(matchedFields, userId, tenantId);
+        const matchedEnrollmentFind = await this.findEnrollmentByMatchedFields(matchedFields, userId, tenantId);
 
-        return { matchedFields, matchedEnrollment };
+        const enrollmentId = (matchedEnrollmentFind as { matchedDocumentId: string }).matchedDocumentId;
+
+        const { success, matchedEnrollment, error } = await this.validateEnrollmentMatch(matchedFields, enrollmentId, userId, tenantId);
+
+        if (!success) {
+            throw new BadRequestException(error);
+        }
+
+        return { matchedEnrollment, matchedFields };
     }
 
     /**
@@ -155,14 +165,22 @@ export class AwsService {
      */
     async matchFieldsWithEnrollment(extractedText: string[]): Promise<Record<string, string>> {
         try {
-            const expectedFields = await this.getExpectedFields(); // Obtener campos esperados
-            return await this.cohereService.matchFields(extractedText, expectedFields);
+            const expectedFields = await this.getExpectedFields();
+
+            const matchedFields = await this.cohereService.matchFields(extractedText, expectedFields);
+
+            if (!matchedFields || Object.keys(matchedFields).length === 0) {
+                throw new InternalServerErrorException('No se encontraron coincidencias con los campos esperados.');
+            }
+
+            return matchedFields;
         } catch (error) {
             throw new InternalServerErrorException(
                 `Error al realizar la coincidencia de campos: ${error.message}`,
             );
         }
     }
+
 
     /**
      * Obtiene los campos esperados del modelo de empadronamiento.
@@ -191,6 +209,43 @@ export class AwsService {
     }
 
 
+    async validateEnrollmentMatch(matchedFields: Record<string, string>, enrollmentId: string, userId: string, tenantId: string) {
+        // Buscar el Enrollment con el Enrollment ID
+        const enrollmentT = new Types.ObjectId(enrollmentId);
+        const userIdT = new Types.ObjectId(userId);
+        const tenantIdT = new Types.ObjectId(tenantId);
+
+
+        const enrollment = await this.enrollmentModel.findOne({ _id: enrollmentT, user: userIdT, tenant: tenantIdT }).exec();
+
+        if (!enrollment) {
+            return { success: false, error: 'No se encontró el Enrollment correspondiente.' };
+        }
+
+        const firstField = Object.keys(matchedFields)[0];  // El primer campo que intentamos hacer match
+        const matchedValue = matchedFields[firstField];  // El valor del campo que hicimos match
+
+        // Normalizar ambos valores antes de compararlos
+        const enrollmentValue = this.normalizeValue(enrollment[firstField]?.toString());
+        const normalizedMatchedValue = this.normalizeValue(matchedValue?.toString());
+
+        // Comparar los valores normalizados
+        if (enrollmentValue !== normalizedMatchedValue) {
+            return { success: false, error: `El valor de ${firstField} no coincide. No se encontró un match real.` };
+        }
+
+        const memberTenantId = await this.tenantService.getMemberTenantId(userId, tenantId);
+        const matchedEnrollment = await this.enrollmentService.generateEnrollmentToken(memberTenantId, String(enrollment._id))
+
+        return { success: true, matchedEnrollment };
+    }
+
+    normalizeValue(value: string): string {
+        // Eliminar espacios extra al principio y al final, convertir todo a minúsculas y eliminar caracteres especiales si es necesario
+        return value.trim().toLowerCase();
+    }
+
+
     /**
     * Encuentra un empadronamiento utilizando campos coincidentes en un worker thread.
     * @param matchedFields - Campos que coinciden con los datos extraídos.
@@ -199,11 +254,11 @@ export class AwsService {
     */
     async findEnrollmentByMatchedFields(matchedFields: Record<string, string>, userId: string, tenantId: string) {
         return new Promise((resolve, reject) => {
-            const workerPath = path.resolve(__dirname, '../workers/enrollment.worker.js');
+            const workerPath = path.resolve(__dirname, '../workers/enrollment.worker.js'); // Asegúrate de que la ruta esté correcta
 
             const worker = new Worker(workerPath, {
                 workerData: {
-                    batch: [matchedFields],
+                    batch: [matchedFields],  // Pasa los datos de los campos que hicieron match
                     userId,
                     tenantId,
                 },
@@ -212,7 +267,14 @@ export class AwsService {
             worker.on('message', (message) => {
                 if (message.success) {
                     if (message.results.length > 0 && message.results[0].success) {
-                        resolve(message.results[0]); // Devolver la coincidencia encontrada
+                        const matchedEnrollment = message.results[0];
+                        const matchedDocumentId = matchedEnrollment.matchedDocumentId; // Convertir el ID a string
+                        const matchedFields = matchedEnrollment.matchedFields; // Los campos coincidentes
+
+                        resolve({
+                            matchedDocumentId,  // El ID del documento que hizo match
+                            matchedFields,      // Los campos que hicieron match
+                        });
                     } else {
                         reject(new NotFoundException('No se encontró un usuario con los datos proporcionados.'));
                     }

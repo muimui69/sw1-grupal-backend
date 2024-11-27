@@ -11,6 +11,7 @@ import {
   HttpStatus,
   UseGuards,
   Req,
+  HttpCode,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PartyService } from '../services/party.service';
@@ -19,9 +20,9 @@ import { UpdatePartyDto } from '../dto/update-party.dto';
 import { Multer } from 'multer';
 import { Types } from 'mongoose';
 import { TokenAuthGuard } from 'src/auth/guard';
-import { TenantIdGuard } from 'src/tenant/guard';
 import { Request } from 'express';
 import { ValidateObjectIdPipe } from 'src/common/pipes';
+import { TokenTenantGuard } from 'src/tenant/guard/token-tenant.guard';
 
 @Controller('party')
 export class PartyController {
@@ -35,8 +36,9 @@ export class PartyController {
    * @returns Información del partido creado.
    */
   @Post()
-  @UseGuards(TokenAuthGuard, TenantIdGuard)
+  @UseGuards(TokenAuthGuard, TokenTenantGuard)
   @UseInterceptors(FileInterceptor('logo'))
+  @HttpCode(HttpStatus.CREATED)
   async create(
     @Req() req: Request,
     @Body() createPartyDto: CreatePartyDto,
@@ -46,12 +48,13 @@ export class PartyController {
       createPartyDto.logo = file;
     }
 
+    const statusCode = HttpStatus.CREATED;
     const userId = req.userId;
     const tenantId = req.tenantId;
     const party = await this.partyService.createParty(userId, tenantId, createPartyDto);
 
     return {
-      statusCode: HttpStatus.CREATED,
+      statusCode,
       message: 'Partido creado',
       data: { party },
     };
@@ -63,8 +66,11 @@ export class PartyController {
    * @returns Lista de partidos.
    */
   @Get()
-  @UseGuards(TokenAuthGuard, TenantIdGuard)
+  @UseGuards(TokenAuthGuard, TokenTenantGuard)
+  @HttpCode(HttpStatus.OK)
   async findAll(@Req() req: Request) {
+
+    const statusCode = HttpStatus.OK;
     const userId = req.userId;
     const tenantId = req.tenantId;
 
@@ -76,7 +82,7 @@ export class PartyController {
     });
 
     return {
-      statusCode: HttpStatus.OK,
+      statusCode,
       message: 'Lista de partidos',
       data: { parties },
     };
@@ -89,18 +95,21 @@ export class PartyController {
    * @returns Información del partido.
    */
   @Get(':id')
-  @UseGuards(TokenAuthGuard, TenantIdGuard)
+  @UseGuards(TokenAuthGuard, TokenTenantGuard)
+  @HttpCode(HttpStatus.OK)
   async findOne(
     @Param('id', ValidateObjectIdPipe) id: string,
     @Req() req: Request,
   ) {
+
+    const statusCode = HttpStatus.OK;
     const userId = req.userId;
     const tenantId = req.tenantId;
 
     const party = await this.partyService.findOne(id, userId, tenantId);
 
     return {
-      statusCode: HttpStatus.OK,
+      statusCode,
       message: 'Partido encontrado',
       data: { party },
     };
@@ -115,8 +124,9 @@ export class PartyController {
    * @returns Información del partido actualizado.
    */
   @Patch(':id')
-  @UseGuards(TokenAuthGuard, TenantIdGuard)
+  @UseGuards(TokenAuthGuard, TokenTenantGuard)
   @UseInterceptors(FileInterceptor('logo'))
+  @HttpCode(HttpStatus.OK)
   async patch(
     @Param('id', ValidateObjectIdPipe) id: string,
     @Req() req: Request,
@@ -127,12 +137,14 @@ export class PartyController {
       updatePartyDto.logo = file;
     }
 
+    const statusCode = HttpStatus.OK;
     const userId = req.userId;
     const tenantId = req.tenantId;
+
     const party = await this.partyService.patchParty(id, userId, tenantId, updatePartyDto);
 
     return {
-      statusCode: HttpStatus.OK,
+      statusCode,
       message: 'Partido actualizado',
       data: { party },
     };
@@ -145,18 +157,21 @@ export class PartyController {
    * @returns Mensaje de confirmación.
    */
   @Delete(':id')
-  @UseGuards(TokenAuthGuard, TenantIdGuard)
+  @UseGuards(TokenAuthGuard, TokenTenantGuard)
+  @HttpCode(HttpStatus.OK)
   async remove(
     @Param('id', ValidateObjectIdPipe) id: string,
     @Req() req: Request,
   ) {
+
+    const statusCode = HttpStatus.OK;
     const userId = req.userId;
     const tenantId = req.tenantId;
 
     await this.partyService.removeParty(id, userId, tenantId);
 
     return {
-      statusCode: HttpStatus.OK,
+      statusCode,
       message: 'Partido eliminado',
     };
   }

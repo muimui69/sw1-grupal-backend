@@ -3,14 +3,14 @@ import { connect, isValidObjectId, model, Schema, Types } from 'mongoose';
 
 // Conexión a MongoDB
 (async () => {
-    // await connect('mongodb://localhost:27017/voting-security'); // Cambia la URI si es necesario
-    await connect(process.env.DATABASE_URL!!); // Cambia la URI si es necesario
+    await connect(process.env.DATABASE_URL!!); // Asegúrate de tener la URL de la base de datos
 })();
 
 // Define el esquema de `Enrollment`
 const enrollmentSchema = new Schema(
     {
         tenant: { type: Types.ObjectId, ref: 'Tenant', required: true },
+        user: { type: Types.ObjectId, ref: 'User', required: true },  // Referencia al usuario
     },
     { timestamps: true, strict: false } // Permitir campos dinámicos en los documentos
 );
@@ -20,29 +20,37 @@ const Enrollment = model('Enrollment', enrollmentSchema);
 /**
  * Procesa un lote de datos para buscar coincidencias en la colección `Enrollment`.
  * @param batch - Lote de filas a procesar.
- * @param tenantId - ID del Tenant al que pertenece el lote.
+ * @param userId - ID del Usuario que se quiere verificar.
+ * @param tenantId - ID del Tenant al que pertenece el usuario.
  */
 async function processBatch(batch: Record<string, string>[], userId: string, tenantId: string) {
     console.log(`Procesando lote de ${batch.length} filas para Tenant ${tenantId}...`);
 
     const results = [];
     for (const row of batch) {
-        const matchedField = Object.keys(row).find(async (field) => {
+        const matchedFields = [];
+
+        // Iterar sobre cada campo en la fila
+        for (const field in row) {
             const value = row[field]?.trim();
             if (value) {
+                // Buscar coincidencias en el `enrollment`
                 const enrollment = await Enrollment.findOne({
                     user: userId,
                     tenant: tenantId,
-                    [field]: value,
+                    [field]: { $regex: value, $options: 'i' }, // Usar regex para hacer búsqueda más flexible
                 }).exec();
 
-                return !!enrollment; // Retorna true si se encontró una coincidencia
+                if (enrollment) {
+                    matchedFields.push({ field, value, enrollment });
+                }
             }
-            return false;
-        });
+        }
 
-        if (matchedField) {
-            results.push({ success: true, matchedField: row[matchedField] });
+        let matchedDocumentId;
+        if (matchedFields.length > 0) {
+            matchedDocumentId = matchedFields[0].enrollment._id;
+            results.push({ success: true, matchedFields, matchedDocumentId: String(matchedDocumentId) });
         } else {
             results.push({ success: false, error: `No se encontró coincidencia para la fila: ${JSON.stringify(row)}` });
         }
@@ -50,6 +58,7 @@ async function processBatch(batch: Record<string, string>[], userId: string, ten
 
     return results;
 }
+
 
 // Lógica principal del worker
 (async () => {

@@ -51,6 +51,38 @@
         },
         {
             "inputs": [],
+            "name": "getTotalVotes",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "_candidateId",
+                    "type": "uint256"
+                }
+            ],
+            "name": "getVotesByCandidate",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
             "name": "getWinner",
             "outputs": [
                 {
@@ -90,9 +122,33 @@
         {
             "inputs": [
                 {
+                    "internalType": "bytes32",
+                    "name": "_voterHash",
+                    "type": "bytes32"
+                }
+            ],
+            "name": "hasUserVoted",
+            "outputs": [
+                {
+                    "internalType": "bool",
+                    "name": "",
+                    "type": "bool"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
                     "internalType": "uint256",
                     "name": "_candidateId",
                     "type": "uint256"
+                },
+                {
+                    "internalType": "bytes32",
+                    "name": "_voterHash",
+                    "type": "bytes32"
                 }
             ],
             "name": "vote",
