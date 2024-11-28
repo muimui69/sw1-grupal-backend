@@ -5,10 +5,7 @@ import { ElectionContractController, TenantContractController } from './controll
 import { MongooseModule } from '@nestjs/mongoose';
 import { MemberTenant, MemberTenantSchema } from 'src/tenant/entity';
 import { HttpModule } from '@nestjs/axios';
-import { BlockchainService } from './services/blockchain.service';
-import { CandidateService } from './services/candidate.service';
-import { PinataModule } from 'src/pinata/pinata.module';
-import { CandidateController } from './controllers/candidate.controller';
+import { BlockchainService } from './services/blockchain/blockchain.service';
 import { EnrollmentModule } from 'src/enrollment/enrollment.module';
 import { TenantModule } from 'src/tenant/tenant.module';
 
@@ -22,12 +19,11 @@ import { TenantModule } from 'src/tenant/tenant.module';
     ]),
     ConfigModule,
     HttpModule,
-    PinataModule,
     EnrollmentModule,
     TenantModule,
   ],
-  controllers: [ElectionContractController, TenantContractController, CandidateController],
-  providers: [BlockchainService, ElectionContractService, TenantContractService, CandidateService],
-  exports: [BlockchainService, ElectionContractService, TenantContractService, CandidateService],
+  controllers: [ElectionContractController, TenantContractController],
+  providers: [BlockchainService, ElectionContractService, TenantContractService],
+  exports: [BlockchainService, ElectionContractService, TenantContractService],
 })
 export class BlockchainModule { }

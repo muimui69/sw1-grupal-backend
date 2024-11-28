@@ -4,13 +4,13 @@ import {
     UseGuards,
     Req,
     Get,
-    BadRequestException,
     HttpStatus,
+    HttpCode,
 } from '@nestjs/common';
 import { TokenAuthGuard } from 'src/auth/guard';
-import { TenantIdGuard } from 'src/tenant/guard';
 import { Request } from 'express';
 import { EnrollmentConfigurationService } from '../services/enrollment-configuration.service';
+import { TokenTenantGuard } from 'src/tenant/guard/token-tenant.guard';
 
 @Controller('enrollment/configuration')
 export class EnrollmentConfigurationController {
@@ -24,13 +24,20 @@ export class EnrollmentConfigurationController {
      * @returns La configuración creada.
      */
     @Post('create')
-    @UseGuards(TokenAuthGuard, TenantIdGuard)
-    async createEnrollmentConfig(@Req() req: Request) {
-        const { userId, tenantId } = this.extractUserAndTenant(req);
+    @UseGuards(TokenAuthGuard, TokenTenantGuard)
+    @HttpCode(HttpStatus.CREATED)
+    async createEnrollmentConfig(
+        @Req() req: Request
+    ) {
+        const statusCode = HttpStatus.CREATED;
+
+        const userId = req.userId;
+        const tenantId = req.tenantId;
+
         const config = await this.enrollmentConfigurationService.createConfig(userId, tenantId);
 
         return {
-            statusCode: HttpStatus.CREATED,
+            statusCode,
             message: 'Configuración de empadronamiento creada con éxito.',
             data: { config },
         };
@@ -42,13 +49,22 @@ export class EnrollmentConfigurationController {
      * @returns La configuración actualizada.
      */
     @Post('start')
-    @UseGuards(TokenAuthGuard, TenantIdGuard)
-    async startEnrollment(@Req() req: Request) {
-        const { userId, tenantId } = this.extractUserAndTenant(req);
+    @UseGuards(TokenAuthGuard, TokenTenantGuard)
+    @HttpCode(HttpStatus.OK)
+    async startEnrollment(
+        @Req() req: Request
+    ) {
+
+        const statusCode = HttpStatus.OK;
+
+        const userId = req.userId;
+        const tenantId = req.tenantId;
+
+
         const config = await this.enrollmentConfigurationService.startEnrollment(userId, tenantId);
 
         return {
-            statusCode: HttpStatus.OK,
+            statusCode,
             message: 'El empadronamiento ha sido iniciado con éxito.',
             data: { config },
         };
@@ -60,13 +76,20 @@ export class EnrollmentConfigurationController {
      * @returns La configuración encontrada.
      */
     @Get()
-    @UseGuards(TokenAuthGuard, TenantIdGuard)
-    async getConfig(@Req() req: Request) {
-        const { userId, tenantId } = this.extractUserAndTenant(req);
+    @UseGuards(TokenAuthGuard, TokenTenantGuard)
+    async getConfig(
+        @Req() req: Request
+    ) {
+
+        const statusCode = HttpStatus.OK;
+
+        const userId = req.userId;
+        const tenantId = req.tenantId;
+
         const config = await this.enrollmentConfigurationService.getConfig(userId, tenantId);
 
         return {
-            statusCode: HttpStatus.OK,
+            statusCode,
             message: 'Configuración de empadronamiento obtenida con éxito.',
             data: { config },
         };
@@ -78,31 +101,23 @@ export class EnrollmentConfigurationController {
      * @returns `true` si el empadronamiento está iniciado, `false` en caso contrario.
      */
     @Get('is-started')
-    @UseGuards(TokenAuthGuard, TenantIdGuard)
+    @UseGuards(TokenAuthGuard, TokenTenantGuard)
+    @HttpCode(HttpStatus.OK)
     async getIsStarted(@Req() req: Request) {
-        const { userId, tenantId } = this.extractUserAndTenant(req);
-        const isStarted = await this.enrollmentConfigurationService.getIsStarted(userId, tenantId);
 
-        return {
-            statusCode: HttpStatus.OK,
-            message: 'Estado del empadronamiento obtenido con éxito.',
-            data: { isStarted },
-        };
-    }
+        const statusCode = HttpStatus.OK;
 
-    /**
-     * Extrae y valida los IDs de usuario y tenant de la solicitud.
-     * @param req - Objeto de la solicitud.
-     * @returns Un objeto con userId y tenantId.
-     * @throws BadRequestException si los IDs no están presentes.
-     */
-    private extractUserAndTenant(req: Request): { userId: string; tenantId: string } {
         const userId = req.userId;
         const tenantId = req.tenantId;
 
-        if (!userId || !tenantId) {
-            throw new BadRequestException('El userId y tenantId son requeridos.');
-        }
-        return { userId, tenantId };
+        const isStarted = await this.enrollmentConfigurationService.getIsStarted(userId, tenantId);
+
+        return {
+            statusCode,
+            message: 'Estado del empadronamiento obtenido con éxito.',
+            data: { isStarted },
+        };
+
     }
+
 }

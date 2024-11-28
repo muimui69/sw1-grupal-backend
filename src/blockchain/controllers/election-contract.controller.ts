@@ -10,7 +10,7 @@ import {
     Req,
     HttpCode,
 } from '@nestjs/common';
-import { ElectionContractService } from '../services/election-contract.service';
+import { ElectionContractService } from '../services/election-contract/election-contract.service';
 import { TokenEnrollmentGuard } from 'src/enrollment/guards/token-enrollment.guard';
 import { Request } from 'express';
 import { TokenTenantGuard } from 'src/tenant/guard/token-tenant.guard';

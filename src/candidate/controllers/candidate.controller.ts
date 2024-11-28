@@ -11,11 +11,11 @@ import {
     UseInterceptors,
     BadRequestException,
 } from '@nestjs/common';
-import { CandidateService } from '../services/candidate.service';
-import { CreateCandidateDto } from '../dto/create-candidate.dto';
+import { CreateCandidateDto } from '../../blockchain/dto/create-candidate.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Multer } from 'multer';
-import { PatchCandidateDto } from '../dto/patch-candidate.dto';
+import { PatchCandidateDto } from '../../blockchain/dto/patch-candidate.dto';
+import { CandidateService } from '../services/candidate.service';
 
 @Controller('blockchain/candidate')
 export class CandidateController {

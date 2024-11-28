@@ -14,11 +14,13 @@ import { BlockchainModule } from './blockchain/blockchain.module';
 import { PinataModule } from './pinata/pinata.module';
 import { BackupModule } from './backup/backup.module';
 import { LogsService } from './common/services/logs.service';
-import { APP_INTERCEPTOR } from '@nestjs/core';
 import { LogsInterceptor } from './common/interceptors/logs.Interceptor';
 import { AwsModule } from './aws/aws.module';
 import { EnrollmentModule } from './enrollment/enrollment.module';
 import { CohereModule } from './cohere/cohere.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { StatisticModule } from './statistic/statistic.module';
+import { CandidateModule } from './candidate/candidate.module';
 
 @Module({
   imports: [
@@ -54,6 +56,8 @@ import { CohereModule } from './cohere/cohere.module';
     AwsModule,
     EnrollmentModule,
     CohereModule,
+    StatisticModule,
+    CandidateModule,
   ],
   providers: [
     LogsService,

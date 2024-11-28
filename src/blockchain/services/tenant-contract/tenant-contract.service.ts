@@ -6,7 +6,7 @@ import { ethers } from 'ethers';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { MemberTenant } from 'src/tenant/entity';
-import tenantAbi from '../abis/contracts/Tenant.json';
+import tenantAbi from '../../abis/contracts/Tenant.json';
 
 @Injectable()
 export class TenantContractService {

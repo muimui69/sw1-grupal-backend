@@ -4,11 +4,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ethers } from 'ethers';
 import { MemberTenant } from 'src/tenant/entity';
-import electionAbi from '../abis/contracts/Election.json';
-import { CandidateWithId } from '../interfaces/election-create';
-import { CreateCandidateDto } from '../dto/create-candidate.dto';
+import electionAbi from '../../blockchain/abis/contracts/Election.json';
+import { CandidateWithId } from '../../blockchain/interfaces/election-create';
+import { CreateCandidateDto } from '../../blockchain/dto/create-candidate.dto';
 import { PinataService } from 'src/pinata/services/pinata.service';
-import { PatchCandidateDto } from '../dto/patch-candidate.dto';
+import { PatchCandidateDto } from '../../blockchain/dto/patch-candidate.dto';
 
 @Injectable()
 export class CandidateService {

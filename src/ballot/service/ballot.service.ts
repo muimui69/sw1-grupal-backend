@@ -4,8 +4,8 @@ import { isValidObjectId, Model, Types } from 'mongoose';
 import { Party } from 'src/party/entity/party.entity';
 import { CandidateWithId } from 'src/blockchain/interfaces/election-create';
 import { TenantService } from 'src/tenant/services/tenant.service';
-import { CandidateService } from 'src/blockchain/services/candidate.service';
 import { PinataService } from 'src/pinata/services/pinata.service';
+import { CandidateService } from 'src/candidate/services/candidate.service';
 
 /**
  * Servicio para generar boletas electorales, combinando candidatos del blockchain

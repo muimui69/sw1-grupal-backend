@@ -1,5 +1,5 @@
 import { Controller, Get, Param, BadRequestException } from '@nestjs/common';
-import { TenantContractService } from '../services/tenant-contract.service';
+import { TenantContractService } from '../services/tenant-contract/tenant-contract.service';
 
 @Controller('blockchain/tenant')
 export class TenantContractController {
