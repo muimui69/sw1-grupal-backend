@@ -4,6 +4,7 @@ import { CandidateService } from './services/candidate.service';
 import { PinataModule } from 'src/pinata/pinata.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MemberTenant, MemberTenantSchema } from 'src/tenant/entity';
+import { TenantModule } from 'src/tenant/tenant.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { MemberTenant, MemberTenantSchema } from 'src/tenant/entity';
         schema: MemberTenantSchema
       },
     ]),
+    TenantModule,
     PinataModule
   ],
   controllers: [CandidateController],

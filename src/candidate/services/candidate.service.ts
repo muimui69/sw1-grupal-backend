@@ -121,7 +121,7 @@ export class CandidateService {
      * @param patchCandidateDto - Datos actualizados del candidato.
      * @returns Detalles del candidato actualizado.
      */
-    async patchCandidate(memberTenantId: string, candidateId: string, patchCandidateDto: PatchCandidateDto) {
+    async patchCandidate(memberTenantId: string, candidateId: number, patchCandidateDto: PatchCandidateDto) {
         const { name, description, photo, email, partyId } = patchCandidateDto;
 
         const memberTenant = await this.memberTenantModel.findById(memberTenantId);

@@ -10,12 +10,17 @@ import {
     UploadedFile,
     UseInterceptors,
     BadRequestException,
+    UseGuards,
+    Req,
+    HttpCode,
 } from '@nestjs/common';
 import { CreateCandidateDto } from '../../blockchain/dto/create-candidate.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Multer } from 'multer';
 import { PatchCandidateDto } from '../../blockchain/dto/patch-candidate.dto';
 import { CandidateService } from '../services/candidate.service';
+import { TokenTenantGuard } from 'src/tenant/guard/token-tenant.guard';
+import { Request } from 'express';
 
 @Controller('blockchain/candidate')
 export class CandidateController {
@@ -29,12 +34,18 @@ export class CandidateController {
      * @returns Candidato creado con éxito.
      */
     @Post('create')
+    @UseGuards(TokenTenantGuard)
     @UseInterceptors(FileInterceptor('photo'))
+    @HttpCode(HttpStatus.CREATED)
     async createCandidate(
-        @Body('memberTenantId') memberTenantId: string,
-        @Body() createCandidateDto: Omit<CreateCandidateDto, 'memberTenantId'>,
+        @Req() req: Request,
+        @Body() createCandidateDto: CreateCandidateDto,
         @UploadedFile() file: Multer.File,
     ) {
+
+        const statusCode = HttpStatus.CREATED;
+        const memberTenantId = req.memberTenantId;
+
         if (!memberTenantId) {
             throw new BadRequestException('El parámetro "memberTenantId" es requerido.');
         }
@@ -46,7 +57,7 @@ export class CandidateController {
         try {
             const candidate = await this.electionService.createCandidate(memberTenantId, createCandidateDto);
             return {
-                statusCode: HttpStatus.CREATED,
+                statusCode,
                 message: 'Candidato agregado',
                 data: { candidate },
             };
@@ -60,8 +71,16 @@ export class CandidateController {
      * @param memberTenantId - ID del tenant asociado a los candidatos.
      * @returns Lista de candidatos.
      */
-    @Get(':memberTenantId')
-    async getAllCandidates(@Param('memberTenantId') memberTenantId: string) {
+    @Get()
+    @UseGuards(TokenTenantGuard)
+    @HttpCode(HttpStatus.OK)
+    async getAllCandidates(
+        @Req() req: Request,
+    ) {
+
+        const statusCode = HttpStatus.OK;
+        const memberTenantId = req.memberTenantId;
+
         if (!memberTenantId) {
             throw new BadRequestException('El parámetro "memberTenantId" es requerido.');
         }
@@ -69,7 +88,7 @@ export class CandidateController {
         try {
             const candidates = await this.electionService.getAllCandidates(memberTenantId);
             return {
-                statusCode: HttpStatus.OK,
+                statusCode,
                 message: 'Lista de candidatos',
                 data: { candidates },
             };
@@ -84,11 +103,16 @@ export class CandidateController {
      * @param candidateId - ID del candidato.
      * @returns Detalles del candidato.
      */
-    @Get(':memberTenantId/:candidateId')
+    @Get(':candidateId')
+    @UseGuards(TokenTenantGuard)
+    @HttpCode(HttpStatus.OK)
     async getCandidate(
-        @Param('memberTenantId') memberTenantId: string,
+        @Req() req: Request,
         @Param('candidateId') candidateId: number,
     ) {
+        const statusCode = HttpStatus.OK;
+        const memberTenantId = req.memberTenantId;
+
         if (!memberTenantId || candidateId === undefined) {
             throw new BadRequestException('Los parámetros "memberTenantId" y "candidateId" son requeridos.');
         }
@@ -96,7 +120,7 @@ export class CandidateController {
         try {
             const candidate = await this.electionService.getCandidate(memberTenantId, candidateId);
             return {
-                statusCode: HttpStatus.OK,
+                statusCode,
                 message: 'Candidato obtenido',
                 data: { candidate },
             };
@@ -113,15 +137,20 @@ export class CandidateController {
      * @param file - Archivo de foto actualizado del candidato.
      * @returns Candidato actualizado.
      */
-    @Patch('update')
+    @Patch('patch/:candidateId')
+    @UseGuards(TokenTenantGuard)
     @UseInterceptors(FileInterceptor('photo'))
+    @HttpCode(HttpStatus.OK)
     async patchCandidate(
-        @Body('memberTenantId') memberTenantId: string,
-        @Body('candidateId') candidateId: string,
-        @Body() patchCandidateDto: Omit<PatchCandidateDto, 'memberTenantId' | 'candidateId'>,
+        @Req() req: Request,
+        @Param('candidateId') candidateId: number,
+        @Body() patchCandidateDto: Omit<PatchCandidateDto, 'candidateId'>,
         @UploadedFile() file: Multer.File,
     ) {
-        if (!memberTenantId || !candidateId) {
+        const statusCode = HttpStatus.OK;
+        const memberTenantId = req.memberTenantId;
+
+        if (!memberTenantId || candidateId === undefined) {
             throw new BadRequestException('Los parámetros "memberTenantId" y "candidateId" son requeridos.');
         }
 
@@ -132,7 +161,7 @@ export class CandidateController {
         try {
             const updatedCandidate = await this.electionService.patchCandidate(memberTenantId, candidateId, patchCandidateDto);
             return {
-                statusCode: HttpStatus.OK,
+                statusCode,
                 message: 'Candidato actualizado',
                 data: { candidate: updatedCandidate },
             };
@@ -147,11 +176,16 @@ export class CandidateController {
      * @param candidateId - ID del candidato a eliminar.
      * @returns Confirmación de eliminación.
      */
-    @Delete('delete')
+    @Delete('delete/:candidateId')
+    @UseGuards(TokenTenantGuard)
+    @HttpCode(HttpStatus.OK)
     async deleteCandidate(
-        @Body('memberTenantId') memberTenantId: string,
-        @Body('candidateId') candidateId: number,
+        @Req() req: Request,
+        @Param('candidateId') candidateId: number,
     ) {
+        const statusCode = HttpStatus.OK;
+        const memberTenantId = req.memberTenantId;
+
         if (!memberTenantId || candidateId === undefined) {
             throw new BadRequestException('Los parámetros "memberTenantId" y "candidateId" son requeridos.');
         }
@@ -159,7 +193,7 @@ export class CandidateController {
         try {
             await this.electionService.deleteCandidate(memberTenantId, candidateId);
             return {
-                statusCode: HttpStatus.OK,
+                statusCode,
                 message: 'Candidato eliminado',
             };
         } catch (error) {
