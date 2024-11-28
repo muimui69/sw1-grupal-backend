@@ -4,8 +4,8 @@ FROM node:22.11.0
 # Instalamos pnpm globalmente
 RUN npm install -g pnpm
 
-# Instalamos herramientas de MongoDB para backups (mongodump y mongorestore)
-RUN apt-get update && apt-get install -y mongodb-clients
+# Instalamos el cliente MongoDB (mongodb-org-shell)
+RUN apt-get update && apt-get install -y mongodb-org-shell
 
 # Definimos el directorio de trabajo en el contenedor
 WORKDIR /app
@@ -14,13 +14,13 @@ WORKDIR /app
 COPY .env .env
 
 # Copiamos los archivos esenciales para instalar dependencias primero
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml ./ 
 
 # Instalamos todas las dependencias, incluyendo el CLI de NestJS
 RUN pnpm install --frozen-lockfile
 
 # Copiamos el resto de los archivos al contenedor
-COPY . .
+COPY . . 
 
 # Compilamos el código TypeScript utilizando el CLI de NestJS
 RUN pnpm exec nest build
