@@ -7,6 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { MemberTenant } from 'src/tenant/entity';
 import electionAbi from '../abis/contracts/Election.json';
+import { VoteRecord } from '../interfaces/election-create';
 
 @Injectable()
 export class ElectionContractService {
@@ -247,4 +248,36 @@ export class ElectionContractService {
     return ethers.keccak256(ethers.toUtf8Bytes(input));
   }
 
+
+  /**
+   * Obtiene el total de votos auditados por un candidato específico.
+   * @param memberTenantId - ID del MemberTenant asociado al contrato.
+   * @param candidateId - ID del candidato.
+   * @returns Total de votos del candidato.
+   */
+  async getVoteAudit(memberTenantId: string, candidateId: number): Promise<VoteRecord[]> {
+    if (!memberTenantId || candidateId === undefined) {
+      throw new BadRequestException('Los parámetros "memberTenantId" y "candidateId" son requeridos.');
+    }
+
+    const memberTenant = await this.memberTenantModel.findById(memberTenantId);
+    if (!memberTenant || !memberTenant.electionAddress) {
+      throw new BadRequestException('Dirección del contrato de Election no configurada.');
+    }
+
+    const electionContract = new ethers.Contract(memberTenant.electionAddress, electionAbi.abi, this.wallet);
+
+    try {
+      const voteAuditRecords = await electionContract.getVoteAudit(candidateId);
+
+      return voteAuditRecords.map((record: any) => ({
+        voterAddress: record.voterAddress,
+        timestamp: record.timestamp.toNumber(),
+        candidateId: record.candidateId,
+        voteHash: record.voteHash
+      }));
+    } catch (error) {
+      throw new BadRequestException(`Error al obtener el registro de auditoría de votos: ${error.message}`);
+    }
+  }
 }

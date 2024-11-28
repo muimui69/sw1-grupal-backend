@@ -10,6 +10,7 @@ import { CandidateService } from './services/candidate.service';
 import { PinataModule } from 'src/pinata/pinata.module';
 import { CandidateController } from './controllers/candidate.controller';
 import { EnrollmentModule } from 'src/enrollment/enrollment.module';
+import { TenantModule } from 'src/tenant/tenant.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { EnrollmentModule } from 'src/enrollment/enrollment.module';
     HttpModule,
     PinataModule,
     EnrollmentModule,
+    TenantModule,
   ],
   controllers: [ElectionContractController, TenantContractController, CandidateController],
   providers: [BlockchainService, ElectionContractService, TenantContractService, CandidateService],

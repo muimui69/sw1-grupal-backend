@@ -13,6 +13,7 @@ import {
 import { ElectionContractService } from '../services/election-contract.service';
 import { TokenEnrollmentGuard } from 'src/enrollment/guards/token-enrollment.guard';
 import { Request } from 'express';
+import { TokenTenantGuard } from 'src/tenant/guard/token-tenant.guard';
 
 @Controller('blockchain/election')
 export class ElectionContractController {
@@ -35,6 +36,10 @@ export class ElectionContractController {
             const enrollmentId = req.enrollmentId;
             const memberTenantId = req.memberTenantId;
 
+            if (!memberTenantId || candidateId === undefined) {
+                throw new BadRequestException('El parámetro "memberTenantId" es requerido.');
+            }
+
             const voteResult = await this.electionService.vote(memberTenantId, enrollmentId, candidateId);
             return {
                 statusCode,
@@ -52,15 +57,17 @@ export class ElectionContractController {
      * @returns Confirmación de la finalización de la elección.
      */
     @Post('end')
+    @HttpCode(HttpStatus.OK)
     async endElection(@Body('memberTenantId') memberTenantId: string) {
         if (!memberTenantId) {
             throw new BadRequestException('El parámetro "memberTenantId" es requerido.');
         }
 
         try {
+            const statusCode = HttpStatus.OK;
             const result = await this.electionService.endElection(memberTenantId);
             return {
-                statusCode: HttpStatus.OK,
+                statusCode,
                 message: 'Elección finalizada con éxito.',
                 data: result,
             };
@@ -107,8 +114,15 @@ export class ElectionContractController {
      * @param memberTenantId - ID del MemberTenant asociado a la elección.
      * @returns Total de votos emitidos.
      */
-    @Get('total-votes/:memberTenantId')
-    async getTotalVotes(@Param('memberTenantId') memberTenantId: string) {
+    @Get('total-votes')
+    @UseGuards(TokenTenantGuard)
+    @HttpCode(HttpStatus.OK)
+    async getTotalVotes(
+        @Req() req: Request,
+    ) {
+        const statusCode = HttpStatus.OK;
+        const memberTenantId = req.memberTenantId;
+
         if (!memberTenantId) {
             throw new BadRequestException('El parámetro "memberTenantId" es requerido.');
         }
@@ -116,7 +130,7 @@ export class ElectionContractController {
         try {
             const totalVotes = await this.electionService.getTotalVotes(memberTenantId);
             return {
-                statusCode: HttpStatus.OK,
+                statusCode,
                 message: 'Total de votos obtenidos con éxito.',
                 data: { totalVotes },
             };
@@ -131,11 +145,17 @@ export class ElectionContractController {
      * @param candidateId - ID del candidato.
      * @returns Total de votos recibidos por el candidato.
      */
-    @Get('votes-by-candidate/:memberTenantId/:candidateId')
+    @Get('votes-by-candidate/:candidateId')
+    @UseGuards(TokenTenantGuard)
+    @HttpCode(HttpStatus.OK)
     async getVotesByCandidate(
-        @Param('memberTenantId') memberTenantId: string,
-        @Param('candidateId') candidateId: number,
+        @Req() req: Request,
+        @Param('candidateId') candidateId: number
     ) {
+
+        const statusCode = HttpStatus.OK;
+        const memberTenantId = req.memberTenantId;
+
         if (!memberTenantId || candidateId === undefined) {
             throw new BadRequestException('Los parámetros "memberTenantId" y "candidateId" son requeridos.');
         }
@@ -143,8 +163,35 @@ export class ElectionContractController {
         try {
             const votes = await this.electionService.getVotesByCandidate(memberTenantId, candidateId);
             return {
-                statusCode: HttpStatus.OK,
+                statusCode,
                 message: `Votos obtenidos para el candidato ${candidateId}.`,
+                data: { candidateId, votes },
+            };
+        } catch (error) {
+            throw new BadRequestException(`Error al obtener los votos del candidato: ${error.message}`);
+        }
+    }
+
+    @Get('vote-audit/:candidateId')
+    @UseGuards(TokenTenantGuard)
+    @HttpCode(HttpStatus.OK)
+    async getVoteAudit(
+        @Req() req: Request,
+        @Param('candidateId') candidateId: number
+    ) {
+        const statusCode = HttpStatus.OK;
+        const memberTenantId = req.memberTenantId;
+
+        if (!memberTenantId || candidateId === undefined) {
+            throw new BadRequestException('Los parámetros "memberTenantId" y "candidateId" son requeridos.');
+        }
+
+        try {
+            const votes = await this.electionService.getVoteAudit(memberTenantId, candidateId);
+
+            return {
+                statusCode,
+                message: `Votos auditados para el candidato ${candidateId}.`,
                 data: { candidateId, votes },
             };
         } catch (error) {

@@ -29,3 +29,10 @@ export interface IVote {
     memberTenantId: string;
     candidateId: number;
 }
+
+export interface VoteRecord {
+    voterAddress: string;  // Dirección del votante que emitió el voto
+    timestamp: number;     // Timestamp del voto, posiblemente en formato Unix (número)
+    candidateId: number;   // ID del candidato que recibió el voto
+    voteHash: string;      // Hash del voto para trazabilidad o verificación
+}
