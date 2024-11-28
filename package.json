@@ -33,6 +33,7 @@
     "@nestjs/platform-express": "^10.4.7",
     "@nestjs/platform-socket.io": "^10.4.11",
     "@nestjs/schedule": "^4.1.1",
+    "@nestjs/serve-static": "^4.0.2",
     "@nestjs/websockets": "^10.4.11",
     "@pinata/sdk": "^2.1.0",
     "@web3-storage/w3up-client": "^16.5.1",

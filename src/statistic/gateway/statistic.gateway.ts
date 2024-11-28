@@ -1,10 +1,26 @@
-import { WebSocketGateway, SubscribeMessage, MessageBody } from '@nestjs/websockets';
+import { WebSocketGateway, SubscribeMessage, MessageBody, OnGatewayConnection, OnGatewayDisconnect, WebSocketServer } from '@nestjs/websockets';
 import { StatisticService } from '../services/statistic.service';
 import { BadRequestException } from '@nestjs/common';
+import { Server } from 'socket.io';
 
-@WebSocketGateway()
-export class StatisticGateway {
+@WebSocketGateway({
+  cors: {
+    origin: "*",
+  }
+})
+export class StatisticGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(private readonly statisticService: StatisticService) { }
+
+  @WebSocketServer()
+  server: Server;
+
+  handleConnection(client: any, ...args: any[]) {
+    console.log(`Client connected: ${client.id}`);
+  }
+
+  handleDisconnect(client: any) {
+    console.log(`Client disconnected: ${client.id}`);
+  }
 
   /**
    * Obtiene estadísticas en tiempo real de los votos de los candidatos en una elección.
@@ -14,7 +30,9 @@ export class StatisticGateway {
   @SubscribeMessage('getRealTimeStatistics')
   async getRealTimeStatistics(@MessageBody() memberTenantId: string) {
     try {
-      return await this.statisticService.getRealTimeStatistics(memberTenantId);
+      const statistics = await this.statisticService.getRealTimeStatistics(memberTenantId);
+      console.log(statistics)
+      return statistics;
     } catch (error) {
       throw new BadRequestException(`Error al obtener las estadísticas: ${error.message}`);
     }

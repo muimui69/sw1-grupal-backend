@@ -21,9 +21,14 @@ import { CohereModule } from './cohere/cohere.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { StatisticModule } from './statistic/statistic.module';
 import { CandidateModule } from './candidate/candidate.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+    }),
     ConfigModule.forRoot({
       load: [envConfig],
       isGlobal: true,
