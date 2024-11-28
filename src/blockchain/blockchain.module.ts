@@ -8,6 +8,7 @@ import { HttpModule } from '@nestjs/axios';
 import { BlockchainService } from './services/blockchain/blockchain.service';
 import { EnrollmentModule } from 'src/enrollment/enrollment.module';
 import { TenantModule } from 'src/tenant/tenant.module';
+import { StatisticModule } from 'src/statistic/statistic.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { TenantModule } from 'src/tenant/tenant.module';
     HttpModule,
     EnrollmentModule,
     TenantModule,
+    StatisticModule,
   ],
   controllers: [ElectionContractController, TenantContractController],
   providers: [BlockchainService, ElectionContractService, TenantContractService],

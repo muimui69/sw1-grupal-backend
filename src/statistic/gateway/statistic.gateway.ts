@@ -30,9 +30,7 @@ export class StatisticGateway implements OnGatewayConnection, OnGatewayDisconnec
   @SubscribeMessage('getRealTimeStatistics')
   async getRealTimeStatistics(@MessageBody() memberTenantId: string) {
     try {
-      const statistics = await this.statisticService.getRealTimeStatistics(memberTenantId);
-      console.log(statistics)
-      return statistics;
+      return await this.statisticService.getRealTimeStatistics(memberTenantId);
     } catch (error) {
       throw new BadRequestException(`Error al obtener las estadísticas: ${error.message}`);
     }

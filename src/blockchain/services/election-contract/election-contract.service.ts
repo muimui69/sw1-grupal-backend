@@ -8,6 +8,7 @@ import { HttpService } from '@nestjs/axios';
 import { MemberTenant } from 'src/tenant/entity';
 import electionAbi from '../../abis/contracts/Election.json';
 import { VoteRecord } from '../../interfaces/election-create';
+import { StatisticGateway } from 'src/statistic/gateway/statistic.gateway';
 
 @Injectable()
 export class ElectionContractService {
@@ -19,6 +20,7 @@ export class ElectionContractService {
   constructor(
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
+    private readonly statisticGateway: StatisticGateway,
     @InjectModel(MemberTenant.name) private readonly memberTenantModel: Model<MemberTenant>,
   ) {
     this.hardhatMicroserviceUrl = this.configService.get<string>('hardhat_microservice_url');
@@ -126,6 +128,9 @@ export class ElectionContractService {
       // Llamar al método vote del contrato, pasando el candidateId y el voterHash
       const tx = await electionContract.vote(candidateId, voterHash);
       await tx.wait();
+
+      const updatedResults = await this.statisticGateway.getRealTimeStatistics(memberTenantId); // Actualiza las estadísticas de la votación
+      this.statisticGateway.server.emit('getRealTimeStatistics', updatedResults);
 
       return { success: true, candidateId, enrollmentId };
     } catch (error) {

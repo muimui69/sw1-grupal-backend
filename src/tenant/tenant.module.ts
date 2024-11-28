@@ -12,6 +12,7 @@ import { TenantController } from './controllers/tenant.controller';
 import { ElectionContractService, TenantContractService } from 'src/blockchain/services';
 import { HttpModule } from '@nestjs/axios';
 import { JwtModule } from '@nestjs/jwt';
+import { StatisticModule } from 'src/statistic/statistic.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { JwtModule } from '@nestjs/jwt';
     JwtModule,
     UserModule,
     HttpModule,
+    StatisticModule,
     forwardRef(() => AuthModule),
   ],
   exports: [

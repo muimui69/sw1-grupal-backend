@@ -14,5 +14,6 @@ import { MemberTenant, MemberTenantSchema } from 'src/tenant/entity';
     ]),
   ],
   providers: [StatisticGateway, StatisticService],
+  exports: [StatisticGateway, StatisticService],
 })
 export class StatisticModule { }

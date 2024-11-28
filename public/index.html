@@ -3,76 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebSocket Test</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    #output {
-      margin-top: 20px;
-    }
-    .log {
-      margin-bottom: 10px;
-      padding: 10px;
-      background-color: #f1f1f1;
-      border-radius: 5px;
-    }
-  </style>
+  <title>Votación en Tiempo Real</title>
 </head>
 <body>
-  <h1>WebSocket Test</h1>
-  <button id="connectBtn">Connect WebSocket</button>
-  <button id="sendBtn" disabled>Send Message</button>
-  <div id="output"></div>
+  <h1>Resultados de la Votación</h1>
+  <div id="results">Esperando resultados...</div>
 
-  <!-- Cargar socket.io-client desde un CDN -->
-  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
-
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
   <script>
-    const connectBtn = document.getElementById('connectBtn');
-    const sendBtn = document.getElementById('sendBtn');
-    const output = document.getElementById('output');
-    let socket;
-
-    connectBtn.onclick = () => {
-      // Establecer la conexión WebSocket usando socket.io
-      socket = io('http://localhost:3000');  // Cambia al puerto correcto si es necesario
-
-      socket.on('connect', () => {
-        logMessage('Conexión WebSocket abierta');
-        sendBtn.disabled = false;  // Habilitar el botón de enviar
-      });
-
-      socket.on('message', (event) => {
-        logMessage('Mensaje recibido: ' + event);
-      });
-
-      socket.on('error', (error) => {
-        logMessage('Error en WebSocket: ' + error);
-      });
-
-      socket.on('disconnect', () => {
-        logMessage('Conexión WebSocket cerrada');
-        sendBtn.disabled = true;  // Deshabilitar el botón de enviar cuando se cierre la conexión
-      });
-    };
-
-    sendBtn.onclick = () => {
-      if (socket && socket.connected) {
-        // Enviar un mensaje de prueba al WebSocket
-        socket.emit('getRealTimeStatistics', '6747f68469862535d490439b');
-      } else {
-        logMessage('WebSocket no está conectado');
-      }
-    };
-
-    function logMessage(message) {
-      const log = document.createElement('div');
-      log.className = 'log';
-      log.textContent = message;
-      output.appendChild(log);
-    }
+    // Conectar al WebSocket de NestJS
+    const socket = io('http://localhost:3000'); // Cambia al puerto de tu servidor NestJS
+  
+    // El memberTenantId es un valor que debes obtener dinámicamente
+    const memberTenantId = '6747f68469862535d490439b'; // Por ejemplo, puede ser un ID que obtienes al autenticar al usuario
+  
+    // Enviar el memberTenantId al servidor para obtener las estadísticas iniciales
+    socket.emit('getRealTimeStatistics', memberTenantId);
+  
+    // Escuchar por actualizaciones en tiempo real
+    socket.on('getRealTimeStatistics', (data) => {
+      console.log('Datos recibidos:', data);  // Verifica en la consola si los datos están llegando correctamente
+      
+      // Mostrar los resultados en el HTML
+      document.getElementById('results').innerHTML = `
+        <h2>Resultados en Tiempo Real</h2>
+        <p>Candidato: ${data[0].candidateName}</p>
+        <p>Votos: ${data[0].voteCount}</p>
+      `;
+    });
+  
   </script>
 </body>
 </html>

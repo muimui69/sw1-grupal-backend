@@ -41,10 +41,10 @@ export class StatisticService {
       const statistics = await Promise.all(
         candidatesData.map(async (candidateData: any) => {
           const candidateId = candidateData.id;
-          const voteCount = await electionContract.getVotesByCandidate(candidateId);
+          const voteCount = (await electionContract.getVotesByCandidate(candidateId)).toString();
 
           return {
-            candidateId,
+            candidateId: String(candidateId),
             candidateName: candidateData.name,
             voteCount,
           };
