@@ -11,6 +11,7 @@ import { VoteRecord } from '../../interfaces/election-create';
 
 @Injectable()
 export class ElectionContractService {
+  private readonly jwtSecretKey: string;
   private readonly hardhatMicroserviceUrl: string;
   private readonly provider: ethers.JsonRpcProvider;
   private readonly wallet: ethers.Wallet;
@@ -25,6 +26,7 @@ export class ElectionContractService {
     const privateKey = this.configService.get<string>('wallet_private_key');
     this.provider = new ethers.JsonRpcProvider(providerUrl);
     this.wallet = new ethers.Wallet(privateKey, this.provider);
+    this.jwtSecretKey = this.configService.get<string>('secret_key_jwt');
   }
 
   /**
@@ -118,7 +120,7 @@ export class ElectionContractService {
     const electionContract = new ethers.Contract(memberTenant.electionAddress, electionAbi.abi, this.wallet);
 
     // Generar el voterHash utilizando el enrollmentId, tenantId y secretKey
-    const voterHash = this.generateVoterHash(enrollmentId, String(memberTenant.tenant), "queHuboParse");
+    const voterHash = this.generateVoterHash(enrollmentId, String(memberTenant.tenant), this.jwtSecretKey);
 
     try {
       // Llamar al método vote del contrato, pasando el candidateId y el voterHash
@@ -176,7 +178,7 @@ export class ElectionContractService {
 
     try {
       // Generar el voterHash usando el enrollmentId, tenantId y secretKey
-      const voterHash = this.generateVoterHash(enrollmentId, String(memberTenant.tenant), "queHuboParse");
+      const voterHash = this.generateVoterHash(enrollmentId, String(memberTenant.tenant), this.jwtSecretKey);
 
       // Consultar si el votante ya ha votado
       const hasVoted = await electionContract.hasUserVoted(voterHash);
