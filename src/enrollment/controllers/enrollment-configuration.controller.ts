@@ -29,15 +29,13 @@ export class EnrollmentConfigurationController {
     async createEnrollmentConfig(
         @Req() req: Request
     ) {
-        const statusCode = HttpStatus.CREATED;
-
         const userId = req.userId;
         const tenantId = req.tenantId;
 
         const config = await this.enrollmentConfigurationService.createConfig(userId, tenantId);
 
         return {
-            statusCode,
+            statusCode: HttpStatus.CREATED,
             message: 'Configuración de empadronamiento creada con éxito.',
             data: { config },
         };
@@ -54,17 +52,13 @@ export class EnrollmentConfigurationController {
     async startEnrollment(
         @Req() req: Request
     ) {
-
-        const statusCode = HttpStatus.OK;
-
         const userId = req.userId;
         const tenantId = req.tenantId;
-
 
         const config = await this.enrollmentConfigurationService.startEnrollment(userId, tenantId);
 
         return {
-            statusCode,
+            statusCode: HttpStatus.OK,
             message: 'El empadronamiento ha sido iniciado con éxito.',
             data: { config },
         };
@@ -80,16 +74,13 @@ export class EnrollmentConfigurationController {
     async getConfig(
         @Req() req: Request
     ) {
-
-        const statusCode = HttpStatus.OK;
-
         const userId = req.userId;
         const tenantId = req.tenantId;
 
         const config = await this.enrollmentConfigurationService.getConfig(userId, tenantId);
 
         return {
-            statusCode,
+            statusCode: HttpStatus.OK,
             message: 'Configuración de empadronamiento obtenida con éxito.',
             data: { config },
         };
@@ -103,17 +94,16 @@ export class EnrollmentConfigurationController {
     @Get('is-started')
     @UseGuards(TokenAuthGuard, TokenTenantGuard)
     @HttpCode(HttpStatus.OK)
-    async getIsStarted(@Req() req: Request) {
-
-        const statusCode = HttpStatus.OK;
-
+    async getIsStarted(
+        @Req() req: Request
+    ) {
         const userId = req.userId;
         const tenantId = req.tenantId;
 
         const isStarted = await this.enrollmentConfigurationService.getIsStarted(userId, tenantId);
 
         return {
-            statusCode,
+            statusCode: HttpStatus.OK,
             message: 'Estado del empadronamiento obtenido con éxito.',
             data: { isStarted },
         };

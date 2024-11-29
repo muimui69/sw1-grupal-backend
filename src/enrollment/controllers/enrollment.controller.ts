@@ -41,7 +41,6 @@ export class EnrollmentController {
             throw new BadRequestException('No se ha proporcionado un archivo.');
         }
 
-        const statusCode = HttpStatus.CREATED;
         const userId = req.userId;
         const tenantId = req.tenantId;
 
@@ -55,7 +54,7 @@ export class EnrollmentController {
         await this.enrollmentService.processExcel(file.buffer, headersArray, userId, tenantId);
 
         return {
-            statusCode,
+            statusCode: HttpStatus.CREATED,
             message: 'Archivo Excel procesado exitosamente.',
         };
     }
@@ -79,8 +78,6 @@ export class EnrollmentController {
             throw new BadRequestException('No se ha proporcionado un archivo.');
         }
 
-        const statusCode = HttpStatus.CREATED;
-
         const userId = req.userId;
         const tenantId = req.tenantId;
 
@@ -94,7 +91,7 @@ export class EnrollmentController {
         try {
             await this.enrollmentService.processCSV(file.buffer, headersArray, userId, tenantId);
             return {
-                statusCode,
+                statusCode: HttpStatus.CREATED,
                 message: 'Archivo CSV procesado exitosamente.',
             };
         } catch (error) {

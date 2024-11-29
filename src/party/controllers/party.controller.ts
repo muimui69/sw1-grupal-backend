@@ -48,13 +48,13 @@ export class PartyController {
       createPartyDto.logo = file;
     }
 
-    const statusCode = HttpStatus.CREATED;
     const userId = req.userId;
     const tenantId = req.tenantId;
+
     const party = await this.partyService.createParty(userId, tenantId, createPartyDto);
 
     return {
-      statusCode,
+      statusCode: HttpStatus.CREATED,
       message: 'Partido creado',
       data: { party },
     };
@@ -69,8 +69,6 @@ export class PartyController {
   @UseGuards(TokenAuthGuard, TokenTenantGuard)
   @HttpCode(HttpStatus.OK)
   async findAll(@Req() req: Request) {
-
-    const statusCode = HttpStatus.OK;
     const userId = req.userId;
     const tenantId = req.tenantId;
 
@@ -82,7 +80,7 @@ export class PartyController {
     });
 
     return {
-      statusCode,
+      statusCode: HttpStatus.OK,
       message: 'Lista de partidos',
       data: { parties },
     };
@@ -101,15 +99,13 @@ export class PartyController {
     @Param('id', ValidateObjectIdPipe) id: string,
     @Req() req: Request,
   ) {
-
-    const statusCode = HttpStatus.OK;
     const userId = req.userId;
     const tenantId = req.tenantId;
 
     const party = await this.partyService.findOne(id, userId, tenantId);
 
     return {
-      statusCode,
+      statusCode: HttpStatus.OK,
       message: 'Partido encontrado',
       data: { party },
     };
@@ -137,14 +133,13 @@ export class PartyController {
       updatePartyDto.logo = file;
     }
 
-    const statusCode = HttpStatus.OK;
     const userId = req.userId;
     const tenantId = req.tenantId;
 
     const party = await this.partyService.patchParty(id, userId, tenantId, updatePartyDto);
 
     return {
-      statusCode,
+      statusCode: HttpStatus.OK,
       message: 'Partido actualizado',
       data: { party },
     };
@@ -163,15 +158,13 @@ export class PartyController {
     @Param('id', ValidateObjectIdPipe) id: string,
     @Req() req: Request,
   ) {
-
-    const statusCode = HttpStatus.OK;
     const userId = req.userId;
     const tenantId = req.tenantId;
 
     await this.partyService.removeParty(id, userId, tenantId);
 
     return {
-      statusCode,
+      statusCode: HttpStatus.OK,
       message: 'Partido eliminado',
     };
   }

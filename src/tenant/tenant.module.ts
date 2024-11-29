@@ -4,11 +4,10 @@ import { Configuration, configurationSchema, MemberTenant, MemberTenantSchema, T
 import { User, userSchema } from 'src/user/entity';
 import { SuscriptionService } from './services';
 import { TenantService } from './services/tenant.service';
-import { SuscriptionController } from './controllers/suscription.controller';
+import { SuscriptionController, TenantController } from './controllers';
 import { AuthModule } from 'src/auth/auth.module';
 import { UserModule } from 'src/user/user.module';
 import { Party, PartySchema } from 'src/party/entity';
-import { TenantController } from './controllers/tenant.controller';
 import { ElectionContractService, TenantContractService } from 'src/blockchain/services';
 import { HttpModule } from '@nestjs/axios';
 import { JwtModule } from '@nestjs/jwt';

@@ -21,12 +21,16 @@ export class SuscriptionController {
   @Post("create")
   @UseGuards(TokenAuthGuard)
   @HttpCode(HttpStatus.CREATED)
-  public async createSuscription(@Body() createTenantDto: CreateTenantDto, @Req() req: Request) {
-    const statusCode = HttpStatus.CREATED;
+  public async createSuscription(
+    @Body() createTenantDto: CreateTenantDto,
+    @Req() req: Request
+  ) {
     const userId = req.userId;
+
     const suscription = await this.suscriptionService.createSuscription(createTenantDto, userId);
+
     return {
-      statusCode,
+      statusCode: HttpStatus.CREATED,
       message: "suscripcion casi acabado",
       data: {
         suscription
@@ -41,9 +45,9 @@ export class SuscriptionController {
    */
   @Post("webhook")
   @HttpCode(HttpStatus.CREATED)
-  public async suscriptionWebhook(@Body() body: Stripe.CheckoutSessionCompletedEvent) {
-    const statusCode = HttpStatus.CREATED;
-
+  public async suscriptionWebhook(
+    @Body() body: Stripe.CheckoutSessionCompletedEvent
+  ) {
     if (body.type !== 'checkout.session.completed') return;
 
     const metadata = body.data.object.metadata;
@@ -54,7 +58,7 @@ export class SuscriptionController {
 
     const suscription = await this.suscriptionService.webhookPayment(body.data.object.metadata);
     return {
-      statusCode,
+      statusCode: HttpStatus.CREATED,
       message: "suscripcion concluida",
       data: {
         suscription

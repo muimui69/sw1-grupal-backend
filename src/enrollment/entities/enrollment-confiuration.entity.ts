@@ -1,7 +1,7 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document, Types } from "mongoose";
-import { Tenant } from "src/tenant/entity";
-import { User } from "src/user/entity";
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document, Types } from 'mongoose';
+import { Tenant } from 'src/tenant/entity';
+import { User } from 'src/user/entity';
 
 
 @Schema({

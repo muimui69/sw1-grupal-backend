@@ -5,12 +5,10 @@ import {
   UseInterceptors,
   HttpStatus,
   HttpException,
-  Get,
-  Param,
   HttpCode,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { PinataService } from '../services/pinata.service';
+import { PinataService } from '../services';
 import { Multer } from 'multer';
 
 @Controller('pinata')
@@ -34,11 +32,10 @@ export class PinataController {
         );
       }
 
-      const statusCode = HttpStatus.CREATED;
       const { cid, fileUrl } = await this.pinataService.uploadFile(file);
 
       return {
-        statusCode,
+        statusCode: HttpStatus.CREATED,
         message: 'Archivo subido exitosamente',
         data: {
           cid,

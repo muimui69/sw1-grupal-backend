@@ -1,6 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
-import { StatisticService } from './services/statistic.service';
-import { StatisticGateway } from './gateway/statistic.gateway';
+import { StatisticService } from './services';
+import { StatisticGateway } from './gateway';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MemberTenant, MemberTenantSchema } from 'src/tenant/entity';
 import { TenantModule } from 'src/tenant/tenant.module';

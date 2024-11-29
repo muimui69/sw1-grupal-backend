@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model, Types } from 'mongoose';
 import { TenantService } from 'src/tenant/services/tenant.service';
-import { EnrollmentConfiguration } from '../entities/enrollment-confiuration.entity';
+import { EnrollmentConfiguration } from '../entities';
 
 const DEFAULT_VALIDATED_FIELDS = ['pais', 'nacionalidad'];
 

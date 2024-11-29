@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Multer } from 'multer';
 import PinataSDK from '@pinata/sdk';
 import { Readable } from 'stream';
-import { IPinataResponse } from '../interfaces/IPinata.interface';
+import { IPinataResponse } from '../interfaces';
 
 @Injectable()
 export class PinataService {
