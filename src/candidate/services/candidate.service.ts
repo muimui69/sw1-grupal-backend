@@ -6,9 +6,8 @@ import { ethers } from 'ethers';
 import { MemberTenant } from 'src/tenant/entity';
 import electionAbi from '../../blockchain/abis/contracts/Election.json';
 import { CandidateWithId } from '../../blockchain/interfaces/election-create';
-import { CreateCandidateDto } from '../../blockchain/dto/create-candidate.dto';
+import { CreateCandidateDto, PatchCandidateDto } from '../dto';
 import { PinataService } from 'src/pinata/services/pinata.service';
-import { PatchCandidateDto } from '../../blockchain/dto/patch-candidate.dto';
 
 @Injectable()
 export class CandidateService {

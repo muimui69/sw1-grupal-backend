@@ -19,8 +19,6 @@ export class BallotController {
   async generateBallot(
     @Req() req: Request,
   ) {
-    const statusCode = HttpStatus.OK;
-
     const userId = req.userId;
     const tenantId = req.tenantId;
     const memberTenantId = req.memberTenantId;
@@ -28,7 +26,7 @@ export class BallotController {
     const ballot = await this.ballotService.generateBallot(memberTenantId, userId, tenantId);
 
     return {
-      statusCode,
+      statusCode: HttpStatus.OK,
       message: 'Boleta electoral generada exitosamente',
       data: {
         ballot,

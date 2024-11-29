@@ -10,7 +10,7 @@ import {
     Req,
     HttpCode,
 } from '@nestjs/common';
-import { ElectionContractService } from '../services/election-contract/election-contract.service';
+import { ElectionContractService } from '../services';
 import { TokenEnrollmentGuard } from 'src/enrollment/guards/token-enrollment.guard';
 import { Request } from 'express';
 import { TokenTenantGuard } from 'src/tenant/guard/token-tenant.guard';
@@ -32,7 +32,6 @@ export class ElectionContractController {
         @Body('candidateId') candidateId: number
     ) {
         try {
-            const statusCode = HttpStatus.CREATED;
             const enrollmentId = req.enrollmentId;
             const memberTenantId = req.memberTenantId;
 
@@ -42,7 +41,7 @@ export class ElectionContractController {
 
             const voteResult = await this.electionService.vote(memberTenantId, enrollmentId, candidateId);
             return {
-                statusCode,
+                statusCode: HttpStatus.CREATED,
                 message: 'Voto registrado con éxito.',
                 data: voteResult,
             };
@@ -64,10 +63,9 @@ export class ElectionContractController {
         }
 
         try {
-            const statusCode = HttpStatus.OK;
             const result = await this.electionService.endElection(memberTenantId);
             return {
-                statusCode,
+                statusCode: HttpStatus.OK,
                 message: 'Elección finalizada con éxito.',
                 data: result,
             };
@@ -88,7 +86,6 @@ export class ElectionContractController {
     async hasUserVoted(
         @Req() req: Request,
     ) {
-        const statusCode = HttpStatus.OK;
         const enrollmentId = req.enrollmentId;
         const memberTenantId = req.memberTenantId;
 
@@ -99,7 +96,7 @@ export class ElectionContractController {
         try {
             const hasVoted = await this.electionService.hasUserVoted(memberTenantId, enrollmentId);
             return {
-                statusCode,
+                statusCode: HttpStatus.OK,
                 message: hasVoted ? 'Este usuario ya ha votado.' : 'Este usuario aún no ha votado.',
                 data: { hasVoted },
             };
@@ -120,7 +117,6 @@ export class ElectionContractController {
     async getTotalVotes(
         @Req() req: Request,
     ) {
-        const statusCode = HttpStatus.OK;
         const memberTenantId = req.memberTenantId;
 
         if (!memberTenantId) {
@@ -130,7 +126,7 @@ export class ElectionContractController {
         try {
             const totalVotes = await this.electionService.getTotalVotes(memberTenantId);
             return {
-                statusCode,
+                statusCode: HttpStatus.OK,
                 message: 'Total de votos obtenidos con éxito.',
                 data: { totalVotes },
             };
@@ -152,8 +148,6 @@ export class ElectionContractController {
         @Req() req: Request,
         @Param('candidateId') candidateId: number
     ) {
-
-        const statusCode = HttpStatus.OK;
         const memberTenantId = req.memberTenantId;
 
         if (!memberTenantId || candidateId === undefined) {
@@ -163,7 +157,7 @@ export class ElectionContractController {
         try {
             const votes = await this.electionService.getVotesByCandidate(memberTenantId, candidateId);
             return {
-                statusCode,
+                statusCode: HttpStatus.OK,
                 message: `Votos obtenidos para el candidato ${candidateId}.`,
                 data: { candidateId, votes },
             };
@@ -179,7 +173,6 @@ export class ElectionContractController {
         @Req() req: Request,
         @Param('candidateId') candidateId: number
     ) {
-        const statusCode = HttpStatus.OK;
         const memberTenantId = req.memberTenantId;
 
         if (!memberTenantId || candidateId === undefined) {
@@ -190,7 +183,7 @@ export class ElectionContractController {
             const votes = await this.electionService.getVoteAudit(memberTenantId, candidateId);
 
             return {
-                statusCode,
+                statusCode: HttpStatus.OK,
                 message: `Votos auditados para el candidato ${candidateId}.`,
                 data: { candidateId, votes },
             };

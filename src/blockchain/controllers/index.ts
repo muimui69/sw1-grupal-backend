@@ -1,2 +1,2 @@
-export * from "./tenant-contract.controller"
-export * from "./election-contract.controller"
+export * from './tenant-contract.controller';
+export * from './election-contract.controller';

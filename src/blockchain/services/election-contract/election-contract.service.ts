@@ -129,8 +129,8 @@ export class ElectionContractService {
       const tx = await electionContract.vote(candidateId, voterHash);
       await tx.wait();
 
-      const updatedResults = await this.statisticGateway.getRealTimeStatistics(memberTenantId); // Actualiza las estadísticas de la votación
-      this.statisticGateway.server.emit('getRealTimeStatistics', updatedResults);
+      // const updatedResults = await this.statisticGateway.getRealTimeStatistics(memberTenantId);
+      // this.statisticGateway.server.emit('getRealTimeStatistics', updatedResults);
 
       return { success: true, candidateId, enrollmentId };
     } catch (error) {

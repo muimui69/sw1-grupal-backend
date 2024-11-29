@@ -2,9 +2,6 @@ import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { SignInDto } from '../dto';
 import { AuthService } from '../services';
 
-/**
- * Controlador para manejar la autenticación de usuarios.
- */
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) { }

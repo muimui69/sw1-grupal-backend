@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { AwsService } from './services/aws.service';
-import { AwsController } from './controllers/aws.controller';
+import { AwsController } from './controllers';
+import { AwsService } from './services';
 import { CohereService } from 'src/cohere/services/cohere.service';
 import { CohereModule } from 'src/cohere/cohere.module';
 import { Enrollment, EnrollmentSchema } from 'src/enrollment/entities/enrollment.entity';

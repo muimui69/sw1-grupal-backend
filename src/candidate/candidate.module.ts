@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { CandidateController } from './controllers/candidate.controller';
-import { CandidateService } from './services/candidate.service';
+import { CandidateController } from './controllers';
+import { CandidateService } from './services';
 import { PinataModule } from 'src/pinata/pinata.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MemberTenant, MemberTenantSchema } from 'src/tenant/entity';

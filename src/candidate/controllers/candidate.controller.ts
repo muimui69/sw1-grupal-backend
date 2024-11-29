@@ -14,10 +14,10 @@ import {
     Req,
     HttpCode,
 } from '@nestjs/common';
-import { CreateCandidateDto } from '../../blockchain/dto/create-candidate.dto';
+import { CreateCandidateDto } from '../dto/create-candidate.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Multer } from 'multer';
-import { PatchCandidateDto } from '../../blockchain/dto/patch-candidate.dto';
+import { PatchCandidateDto } from '../dto/patch-candidate.dto';
 import { CandidateService } from '../services/candidate.service';
 import { TokenTenantGuard } from 'src/tenant/guard/token-tenant.guard';
 import { Request } from 'express';

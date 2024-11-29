@@ -1,7 +1,8 @@
 import { WebSocketGateway, SubscribeMessage, MessageBody, OnGatewayConnection, OnGatewayDisconnect, WebSocketServer } from '@nestjs/websockets';
 import { StatisticService } from '../services/statistic.service';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, UseGuards } from '@nestjs/common';
 import { Server } from 'socket.io';
+import { TokenTenantGuard } from 'src/tenant/guard/token-tenant.guard';
 
 @WebSocketGateway({
   cors: {
@@ -28,6 +29,7 @@ export class StatisticGateway implements OnGatewayConnection, OnGatewayDisconnec
    * @returns Estadísticas de los votos en tiempo real.
    */
   @SubscribeMessage('getRealTimeStatistics')
+  @UseGuards(TokenTenantGuard)
   async getRealTimeStatistics(@MessageBody() memberTenantId: string) {
     try {
       return await this.statisticService.getRealTimeStatistics(memberTenantId);
@@ -42,7 +44,10 @@ export class StatisticGateway implements OnGatewayConnection, OnGatewayDisconnec
    * @returns El total de votos.
    */
   @SubscribeMessage('getTotalVotes')
-  async getTotalVotes(@MessageBody() memberTenantId: string) {
+  @UseGuards(TokenTenantGuard)
+  async getTotalVotes(
+    @MessageBody() memberTenantId: string
+  ) {
     try {
       return await this.statisticService.getTotalVotes(memberTenantId);
     } catch (error) {
@@ -57,6 +62,7 @@ export class StatisticGateway implements OnGatewayConnection, OnGatewayDisconnec
    * @returns Los registros de votos para un candidato específico.
    */
   @SubscribeMessage('getVoteAudit')
+  @UseGuards(TokenTenantGuard)
   async getVoteAudit(@MessageBody() data: { memberTenantId: string, candidateId: number }) {
     try {
       return await this.statisticService.getVoteAudit(data.memberTenantId, data.candidateId);

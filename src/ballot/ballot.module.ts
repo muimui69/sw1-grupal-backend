@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { BallotService } from './service/ballot.service';
-import { BallotController } from './controllers/ballot.controller';
+import { BallotService } from './service';
+import { BallotController } from './controllers';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Party, PartySchema } from 'src/party/entity';
 import { UserModule } from 'src/user/user.module';

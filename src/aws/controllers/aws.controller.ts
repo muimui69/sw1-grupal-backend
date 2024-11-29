@@ -38,7 +38,6 @@ export class AwsController {
       throw new BadRequestException('Debes subir las fotos del anverso y reverso del documento');
     }
 
-    const statusCode = HttpStatus.OK;
     const userId = req.userId;
     const tenantId = req.tenantId;
     const [frontFile, backFile] = files;
@@ -47,7 +46,7 @@ export class AwsController {
       const result = await this.awsService.processAndValidateDocument(frontFile.buffer, backFile.buffer, userId, tenantId);
 
       return {
-        statusCode,
+        statusCode: HttpStatus.OK,
         message: 'Documento procesado y validado exitosamente',
         data: result,
       };
@@ -73,14 +72,11 @@ export class AwsController {
       throw new BadRequestException('Debes subir tres fotos: anverso, reverso del documento y tu selfie.');
     }
 
-    const statusCode = HttpStatus.OK;
-
     const userId = req.userId;
     const tenantId = req.tenantId;
     const [frontFile, backFile, selfieFile] = files;
 
     try {
-      // Llamar al servicio para comparar la selfie con las caras del documento
       const isFaceMatch = await this.awsService.compareFacesWithDocument(
         userId,
         tenantId,
@@ -90,7 +86,7 @@ export class AwsController {
       );
 
       return {
-        statusCode,
+        statusCode: HttpStatus.OK,
         message: 'Comparación facial completada',
         data: { isFaceMatch },
       };

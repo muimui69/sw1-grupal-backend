@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { CohereService } from './services/cohere.service';
+import { CohereService } from './services';
 
 @Module({
   providers: [CohereService],

@@ -23,14 +23,23 @@
     // Escuchar por actualizaciones en tiempo real
     socket.on('getRealTimeStatistics', (data) => {
       console.log('Datos recibidos:', data);  // Verifica en la consola si los datos están llegando correctamente
-      
-      // Mostrar los resultados en el HTML
-      document.getElementById('results').innerHTML = `
-        <h2>Resultados en Tiempo Real</h2>
-        <p>Candidato: ${data[0].candidateName}</p>
-        <p>Votos: ${data[0].voteCount}</p>
-      `;
+
+      // Crear un string con los resultados para todos los candidatos
+      let resultsHTML = '<h2>Resultados en Tiempo Real</h2>';
+
+      // Iterar sobre los datos y crear un elemento para cada candidato
+      data.forEach(candidate => {
+        resultsHTML += `
+          <p>Candidato: ${candidate.candidateName}</p>
+          <p>Votos: ${candidate.voteCount}</p>
+          <hr>
+        `;
+      });
+
+      // Actualizar el contenido del div con los resultados de todos los candidatos
+      document.getElementById('results').innerHTML = resultsHTML;
     });
+
   
   </script>
 </body>
